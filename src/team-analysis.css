@@ -1,0 +1,478 @@
+.team-analysis-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.team-analysis-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 68px;
+  gap: 20px;
+  padding: 13px 18px;
+  border: 1px solid #e4e7ed;
+  border-left: 3px solid #4a5dff;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.team-analysis-note b {
+  color: #303133;
+  font-weight: 600;
+}
+
+.team-analysis-note p {
+  margin: 3px 0 0;
+  color: #909399;
+  font-size: 13px;
+}
+
+.team-analysis-note > span {
+  flex: 0 0 auto;
+  padding: 5px 9px;
+  color: #4a5dff;
+  border-radius: 3px;
+  background: #ecf0ff;
+  font-size: 12px;
+}
+
+.team-filter-panel {
+  display: flex;
+  align-items: center;
+  min-height: 128px;
+  gap: 14px 20px;
+  padding: 16px 18px;
+  flex-wrap: wrap;
+}
+
+.team-date-shortcuts {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.team-date-shortcuts > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 4px;
+  color: #606266;
+}
+
+.team-date-shortcuts button {
+  height: 30px;
+  padding: 0 13px;
+  color: #606266;
+  border: 1px solid #dcdfe6;
+  border-radius: 3px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.team-date-shortcuts button:hover,
+.team-date-shortcuts button.active {
+  color: #4a5dff;
+  border-color: #8795ff;
+  background: #f0f2ff;
+}
+
+.team-filter-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #606266;
+  white-space: nowrap;
+}
+
+.team-filter-item > input,
+.team-select-control {
+  width: 142px;
+  height: 32px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.team-filter-item > input {
+  padding: 0 10px;
+  color: #606266;
+  outline: 0;
+}
+
+.team-filter-item > input:focus,
+.team-select-control:focus-within,
+.team-date-control:focus-within {
+  border-color: #4a5dff;
+}
+
+.team-select-control {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.team-select-control select {
+  width: 100%;
+  height: 100%;
+  padding: 0 29px 0 10px;
+  color: #606266;
+  border: 0;
+  outline: 0;
+  appearance: none;
+  background: transparent;
+}
+
+.team-select-control svg {
+  position: absolute;
+  right: 9px;
+  color: #a8abb2;
+  pointer-events: none;
+}
+
+.team-date-control {
+  display: flex;
+  align-items: center;
+  width: 300px;
+  height: 32px;
+  padding: 0 9px;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.team-date-control svg {
+  flex: 0 0 auto;
+  color: #a8abb2;
+}
+
+.team-date-control input {
+  min-width: 0;
+  width: 124px;
+  padding: 0 6px;
+  color: #606266;
+  border: 0;
+  outline: 0;
+  background: transparent;
+}
+
+.team-date-control em {
+  color: #909399;
+  font-style: normal;
+}
+
+.team-filter-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+.team-table-panel {
+  min-width: 0;
+  padding: 18px 18px 0;
+}
+
+.team-table-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 34px;
+  gap: 18px;
+  margin-bottom: 14px;
+}
+
+.team-table-toolbar > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #909399;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.team-table-toolbar > div b {
+  color: #303133;
+}
+
+.team-table-toolbar > div i {
+  width: 1px;
+  height: 14px;
+  margin: 0 3px;
+  background: #dcdfe6;
+}
+
+.team-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid #ebeef5;
+}
+
+.team-analysis-table {
+  width: 100%;
+  min-width: 1940px;
+  border-spacing: 0;
+  border-collapse: separate;
+  color: #606266;
+  background: #fff;
+}
+
+.team-analysis-table th,
+.team-analysis-table td {
+  min-width: 86px;
+  height: 54px;
+  padding: 10px 13px;
+  border-right: 1px solid #ebeef5;
+  border-bottom: 1px solid #ebeef5;
+  text-align: left;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.team-analysis-table th {
+  height: 44px;
+  color: #303133;
+  background: #fafafa;
+  font-weight: 500;
+}
+
+.team-analysis-table th:nth-child(3),
+.team-analysis-table td:nth-child(3),
+.team-analysis-table th:nth-child(5),
+.team-analysis-table td:nth-child(5) {
+  min-width: 138px;
+}
+
+.team-analysis-table th:nth-child(11),
+.team-analysis-table td:nth-child(11),
+.team-analysis-table th:nth-child(12),
+.team-analysis-table td:nth-child(12),
+.team-analysis-table th:nth-child(13),
+.team-analysis-table td:nth-child(13),
+.team-analysis-table th:nth-child(14),
+.team-analysis-table td:nth-child(14) {
+  min-width: 168px;
+}
+
+.team-analysis-table th:nth-child(1),
+.team-analysis-table td:nth-child(1) {
+  position: sticky;
+  left: 0;
+  width: 92px;
+  min-width: 92px;
+  max-width: 92px;
+  z-index: 2;
+  background: #fff;
+}
+
+.team-analysis-table th:nth-child(2),
+.team-analysis-table td:nth-child(2) {
+  position: sticky;
+  left: 92px;
+  min-width: 118px;
+  z-index: 2;
+  background: #fff;
+  box-shadow: 7px 0 9px -9px rgba(48, 49, 51, .55);
+}
+
+.team-analysis-table th:nth-child(1),
+.team-analysis-table th:nth-child(2) {
+  z-index: 4;
+  background: #fafafa;
+}
+
+.team-analysis-table th:last-child,
+.team-analysis-table td:last-child {
+  border-right: 0;
+}
+
+.team-analysis-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.team-analysis-table tbody tr:hover td,
+.team-analysis-table tbody tr:hover td:last-child {
+  background: #f7f8fa;
+}
+
+.team-username,
+.team-number {
+  color: #303133;
+  font-weight: 600;
+}
+
+.team-level {
+  display: inline-flex;
+  min-width: 30px;
+  justify-content: center;
+  padding: 2px 7px;
+  color: #4a5dff;
+  border-radius: 3px;
+  background: #ecf0ff;
+  font-size: 12px;
+}
+
+.team-money {
+  color: #303133;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.team-currency-stack {
+  display: grid;
+  gap: 5px;
+}
+
+.team-currency-stack > span {
+  display: grid;
+  grid-template-columns: 43px minmax(76px, 1fr);
+  align-items: center;
+  gap: 7px;
+}
+
+.team-currency-stack em {
+  padding: 2px 4px;
+  color: #8a8f99;
+  border-radius: 3px;
+  background: #f3f4f7;
+  font-size: 10px;
+  font-style: normal;
+  text-align: center;
+}
+
+.team-currency-stack b {
+  color: #303133;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: right;
+}
+
+.team-currency-stack b.positive {
+  color: #43a047;
+}
+
+.team-currency-stack b.negative {
+  color: #e54b4b;
+}
+
+.team-currency-stack.wage b {
+  color: #4a5dff;
+}
+
+.team-status {
+  display: inline-flex;
+  min-width: 42px;
+  justify-content: center;
+  padding: 2px 7px;
+  border: 1px solid;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+.team-status.enabled {
+  color: #67c23a;
+  border-color: #c2e7b0;
+  background: #f0f9eb;
+}
+
+.team-status.disabled {
+  color: #909399;
+  border-color: #dcdfe6;
+  background: #f4f4f5;
+}
+
+.team-table-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 150px;
+  gap: 8px;
+  color: #a8abb2;
+}
+
+.team-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 66px;
+  gap: 7px;
+  color: #909399;
+  white-space: nowrap;
+}
+
+.team-pagination button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  gap: 4px;
+  padding: 0 7px;
+  color: #606266;
+  border: 1px solid #e4e7ed;
+  border-radius: 3px;
+  background: #f5f7fa;
+  cursor: pointer;
+}
+
+.team-pagination button.active {
+  color: #fff;
+  border-color: #4a5dff;
+  background: #4a5dff;
+}
+
+.team-pagination button:disabled {
+  cursor: not-allowed;
+}
+
+@media (max-width: 1180px) {
+  .team-analysis-note {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .team-table-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .team-table-toolbar > div {
+    align-self: flex-end;
+  }
+}
+
+@media (max-width: 720px) {
+  .team-date-shortcuts {
+    overflow-x: auto;
+  }
+
+  .team-date-shortcuts > span,
+  .team-date-shortcuts button {
+    flex: 0 0 auto;
+  }
+
+  .team-filter-panel,
+  .team-filter-item,
+  .team-filter-item > input,
+  .team-select-control,
+  .team-date-control {
+    width: 100%;
+  }
+
+  .team-date-control input {
+    width: 44%;
+  }
+
+  .team-table-toolbar > div {
+    align-self: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .team-pagination {
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+}

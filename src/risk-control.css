@@ -1,0 +1,707 @@
+.risk-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  color: #303133;
+}
+
+.risk-alert-banner {
+  display: flex;
+  align-items: center;
+  min-height: 76px;
+  gap: 13px;
+  padding: 14px 18px;
+  border: 1px solid #d8e4d2;
+  border-radius: 4px;
+  background: #f4faf0;
+}
+
+.risk-alert-banner.warning {
+  border-color: #f5c2c2;
+  background: #fff4f4;
+}
+
+.risk-alert-banner-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+  color: #67a84f;
+  border-radius: 50%;
+  background: #e7f4e1;
+}
+
+.risk-alert-banner.warning .risk-alert-banner-icon {
+  color: #e54b4b;
+  background: #ffe1e1;
+}
+
+.risk-alert-banner > div:nth-child(2) {
+  min-width: 0;
+  flex: 1;
+}
+
+.risk-alert-banner b,
+.risk-alert-banner p {
+  margin: 0;
+}
+
+.risk-alert-banner p {
+  margin-top: 4px;
+  color: #909399;
+  font-size: 12px;
+}
+
+.risk-alert-banner > span {
+  display: grid;
+  min-width: 32px;
+  height: 32px;
+  place-items: center;
+  padding: 0 8px;
+  color: #fff;
+  border-radius: 16px;
+  background: #e54b4b;
+  font-weight: 700;
+}
+
+.risk-filter-panel {
+  padding: 16px 18px;
+}
+
+.risk-shortcuts {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.risk-shortcuts > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-right: 4px;
+  color: #606266;
+  font-size: 13px;
+}
+
+.risk-shortcuts button {
+  height: 30px;
+  padding: 0 13px;
+  color: #606266;
+  border: 1px solid #dcdfe6;
+  border-radius: 3px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.risk-shortcuts button:hover,
+.risk-shortcuts button.active {
+  color: #4a5dff;
+  border-color: #8795ff;
+  background: #f0f2ff;
+}
+
+.risk-filter-grid {
+  display: grid;
+  grid-template-columns: 1.35fr .9fr .9fr auto;
+  align-items: end;
+  gap: 14px;
+}
+
+.risk-filter-grid > label > span {
+  display: block;
+  margin-bottom: 6px;
+  color: #606266;
+  font-size: 12px;
+}
+
+.risk-filter-grid input,
+.risk-filter-grid select {
+  width: 100%;
+  height: 34px;
+  padding: 0 10px;
+  color: #606266;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  outline: 0;
+  background: #fff;
+}
+
+.risk-filter-grid input:focus,
+.risk-filter-grid select:focus {
+  border-color: #4a5dff;
+}
+
+.risk-date-range > div {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 7px;
+}
+
+.risk-date-range em {
+  color: #909399;
+  font-style: normal;
+}
+
+.risk-filter-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.risk-table-panel {
+  overflow: hidden;
+}
+
+.risk-table-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 54px;
+  padding: 0 18px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.risk-table-head > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.risk-table-head svg {
+  color: #4a5dff;
+}
+
+.risk-table-head span {
+  color: #909399;
+  font-size: 12px;
+}
+
+.risk-table-scroll {
+  overflow: auto;
+}
+
+.risk-table {
+  width: 100%;
+  min-width: 1420px;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.risk-table th,
+.risk-table td {
+  padding: 9px 12px;
+  border-right: 1px solid #ebeef5;
+  border-bottom: 1px solid #ebeef5;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.risk-table tbody tr.game-start td {
+  border-top: 2px solid #dfe3ea;
+}
+
+.risk-table tbody tr:first-child td {
+  border-top: 0;
+}
+
+.risk-game-fixed {
+  padding-top: 16px !important;
+  vertical-align: top;
+  background: #fff;
+}
+
+.risk-period-cell b,
+.risk-period-cell small {
+  display: block;
+}
+
+.risk-period-cell b {
+  color: #4a5dff;
+  font-size: 12px;
+}
+
+.risk-period-cell small {
+  margin-top: 3px;
+  color: #909399;
+  font-size: 10px;
+}
+
+.risk-table th {
+  color: #606266;
+  background: #f5f7fa;
+  font-weight: 500;
+}
+
+.risk-table tbody tr:hover,
+.risk-table tbody tr.triggered:hover {
+  background: #f5f7ff;
+}
+
+.risk-table tbody tr.triggered {
+  background: #fff8f8;
+}
+
+.risk-table td small {
+  color: #a1a5ad;
+}
+
+.risk-game-cell b,
+.risk-game-cell span,
+.risk-game-cell small {
+  display: block;
+}
+
+.risk-game-cell b {
+  color: #303133;
+}
+
+.risk-game-cell small {
+  margin-top: 4px;
+  color: #909399;
+}
+
+.risk-money {
+  font-weight: 650;
+}
+
+.risk-money.loss,
+.risk-limit-game b.loss {
+  color: #e54b4b;
+}
+
+.risk-money.profit,
+.risk-limit-game b.profit {
+  color: #43a047;
+}
+
+.risk-usage {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.risk-usage > div {
+  width: 72px;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: #ebeef5;
+}
+
+.risk-usage i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #e6a23c;
+}
+
+.risk-usage.danger i {
+  background: #e54b4b;
+}
+
+.risk-usage span {
+  color: #606266;
+  font-variant-numeric: tabular-nums;
+}
+
+.risk-status {
+  display: inline-flex;
+  align-items: center;
+  height: 25px;
+  gap: 4px;
+  padding: 0 8px;
+  border-radius: 3px;
+}
+
+.risk-status.triggered {
+  color: #d83b3b;
+  background: #ffe8e8;
+}
+
+.risk-status.normal {
+  color: #529b2e;
+  background: #f0f9eb;
+}
+
+.risk-edit-button {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  gap: 5px;
+  padding: 0 9px;
+  color: #4a5dff;
+  border: 1px solid #b9c2ff;
+  border-radius: 3px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.risk-edit-button:hover {
+  background: #f0f2ff;
+}
+
+.risk-loading,
+.risk-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 170px;
+  gap: 9px;
+  color: #909399;
+}
+
+.risk-limit-overlay {
+  z-index: 118;
+}
+
+.risk-limit-dialog {
+  display: flex;
+  width: min(900px, calc(100vw - 40px));
+  max-height: min(820px, calc(100vh - 40px));
+  flex-direction: column;
+  overflow: hidden;
+  color: #303133;
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 16px 45px rgba(0, 0, 0, .28);
+}
+
+.risk-limit-dialog > header,
+.risk-limit-dialog > footer {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  min-height: 56px;
+  padding: 0 20px;
+}
+
+.risk-limit-dialog > header {
+  justify-content: space-between;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.risk-limit-dialog > header > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.risk-limit-dialog > header svg {
+  color: #4a5dff;
+}
+
+.risk-limit-dialog > header > button {
+  padding: 5px;
+  color: #909399;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.risk-limit-body {
+  display: grid;
+  gap: 17px;
+  min-height: 0;
+  overflow: auto;
+  padding: 20px;
+  background: #fafbfc;
+}
+
+.risk-limit-game {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid #e4e7ed;
+  background: #e4e7ed;
+}
+
+.risk-limit-game > div {
+  padding: 12px;
+  background: #fff;
+}
+
+.risk-limit-game span,
+.risk-limit-game b {
+  display: block;
+}
+
+.risk-limit-game span {
+  margin-bottom: 6px;
+  color: #909399;
+  font-size: 11px;
+}
+
+.risk-limit-game b {
+  font-size: 12px;
+}
+
+.risk-period-config {
+  overflow: hidden;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.risk-period-config-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 0 14px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.risk-period-config-head span {
+  color: #909399;
+  font-size: 12px;
+}
+
+.risk-period-config-scroll {
+  overflow-x: auto;
+}
+
+.risk-period-config-table {
+  width: 100%;
+  min-width: 760px;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.risk-period-config-table th,
+.risk-period-config-table td {
+  padding: 10px 11px;
+  border-right: 1px solid #ebeef5;
+  border-bottom: 1px solid #ebeef5;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.risk-period-config-table th {
+  color: #606266;
+  background: #f5f7fa;
+  font-weight: 500;
+}
+
+.risk-period-config-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.risk-period-config-table td > b,
+.risk-period-config-table td > small {
+  display: block;
+}
+
+.risk-period-config-table td > small {
+  margin-top: 3px;
+  color: #909399;
+  font-size: 10px;
+}
+
+.risk-config-input {
+  display: flex;
+  width: 190px;
+  height: 32px;
+  overflow: hidden;
+  border: 1px solid #dcdfe6;
+  border-radius: 3px;
+}
+
+.risk-config-input:focus-within {
+  border-color: #4a5dff;
+}
+
+.risk-config-input input {
+  min-width: 0;
+  flex: 1;
+  padding: 0 9px;
+  border: 0;
+  outline: 0;
+}
+
+.risk-config-input span {
+  display: grid;
+  min-width: 48px;
+  place-items: center;
+  color: #606266;
+  border-left: 1px solid #dcdfe6;
+  background: #f5f7fa;
+}
+
+.risk-config-error {
+  display: block;
+  margin-top: 4px;
+  color: #e54b4b !important;
+  font-size: 10px;
+}
+
+.risk-limit-field {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
+  align-items: start;
+  gap: 12px;
+}
+
+.risk-limit-field > span {
+  padding-top: 9px;
+  color: #606266;
+  text-align: right;
+}
+
+.risk-limit-field em {
+  margin-right: 4px;
+  color: #e54b4b;
+  font-style: normal;
+}
+
+.risk-limit-field > div {
+  display: flex;
+  height: 36px;
+  overflow: hidden;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.risk-limit-field input {
+  min-width: 0;
+  flex: 1;
+  padding: 0 11px;
+  border: 0;
+  outline: 0;
+}
+
+.risk-limit-field > div > span {
+  display: grid;
+  min-width: 64px;
+  place-items: center;
+  color: #606266;
+  border-left: 1px solid #dcdfe6;
+  background: #f5f7fa;
+}
+
+.risk-limit-field > small {
+  grid-column: 2;
+  margin-top: -8px;
+  color: #e54b4b;
+}
+
+.risk-limit-tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 12px 14px;
+  color: #7a5b22;
+  border: 1px solid #f3d19e;
+  background: #fdf6ec;
+}
+
+.risk-limit-tip svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.risk-limit-tip p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.risk-limit-tip b {
+  display: block;
+  margin-bottom: 2px;
+}
+
+.risk-limit-dialog > footer {
+  justify-content: flex-end;
+  gap: 10px;
+  border-top: 1px solid #ebeef5;
+}
+
+.nav-alert-badge {
+  display: inline-grid;
+  min-width: 19px;
+  height: 19px;
+  flex: 0 0 auto;
+  place-items: center;
+  padding: 0 5px;
+  color: #fff;
+  border-radius: 10px;
+  background: #e54b4b;
+  box-shadow: 0 0 0 2px #fff;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 19px;
+}
+
+.nav-group-button.has-alert {
+  gap: 7px;
+}
+
+.side-link.compact-label {
+  gap: 6px;
+  padding-right: 10px;
+  padding-left: 35px;
+}
+
+.side-link.compact-label .side-link-label {
+  font-size: 12px;
+  letter-spacing: -.2px;
+}
+
+.side-link.compact-label .nav-change-mark {
+  font-size: 11px;
+}
+
+.sidebar-collapsed .nav-alert-badge {
+  position: absolute;
+  top: 6px;
+  right: 9px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font-size: 9px;
+  line-height: 16px;
+}
+
+@media (max-width: 1200px) {
+  .risk-filter-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .risk-filter-actions {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 720px) {
+  .risk-filter-grid,
+  .risk-limit-game {
+    grid-template-columns: 1fr;
+  }
+
+  .risk-filter-actions {
+    grid-column: auto;
+  }
+
+  .risk-shortcuts {
+    overflow-x: auto;
+  }
+
+  .risk-limit-field {
+    grid-template-columns: 1fr;
+  }
+
+  .risk-limit-field > span {
+    padding: 0;
+    text-align: left;
+  }
+
+  .risk-limit-field > small {
+    grid-column: auto;
+  }
+}
