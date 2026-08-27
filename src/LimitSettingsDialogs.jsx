@@ -96,9 +96,10 @@ export function LotteryPeriodLimitDialog({ lotteryRow, value, onClose, onSave })
           <section className="limit-form-card">
             <h3>二、本期投注限红</h3>
             <LimitField label="本期最高返奖金额" required error={errors.periodRewardLimit}><div className="limit-number-input"><input type="number" min="0" step="0.01" value={form.periodRewardLimit} onChange={(event) => setField('periodRewardLimit', event.target.value)} /><span>CNY</span></div></LimitField>
-            <p className="limit-section-note">统计本期所有玩家已受理投注的预计净返奖总额，不包含任何投注本金。同一期、同一互斥玩法的相反选项须跨用户汇总后先对冲，只以抵扣后的净返奖风险占用限红。</p>
-            <div className="limit-formulas compact"><p><b>互斥组选项净返奖</b> = |Σ所有玩家方向A预计净奖励 − Σ所有玩家方向B预计净奖励|</p><p><b>本期返奖占用</b> = Σ 各互斥组对冲后净返奖 + Σ 不可对冲投注预计净奖励（单挑订单先按单挑倍数封顶，再按单挑奖励上限封顶）</p><p><b>受理条件</b>：加入新投注并重新对冲后的本期返奖占用 ≤ 本期最高返奖金额</p></div>
+            <p className="limit-section-note">本期只统计预计净返奖，不含本金。大小单双等相反方向先跨用户对冲；定位胆等最多只中一个选项的玩法，各选项不累加，只取预计净返奖最高的一项。</p>
+            <div className="limit-formulas compact"><p><b>相反方向净返奖</b> = |Σ方向A预计净奖励 − Σ方向B预计净奖励|</p><p><b>多选一玩法占用</b> = max（各选项汇总后的预计净返奖）</p><p><b>本期返奖占用</b> = Σ相反方向对冲后净返奖 + Σ多选一玩法最高选项净返奖 + Σ其他玩法预计净返奖（单挑订单先执行双重封顶）</p><p><b>受理条件</b>：重新计算后的本期返奖占用 ≤ 本期最高返奖金额</p></div>
             <div className="limit-example"><b>跨用户对冲示例</b><p>同一期同一大小玩法中，A 用户投注 1,000 CNY“大”，B 用户投注 1,000 CNY“小”。两侧预计净返奖完全对冲，新增本期返奖占用为 0，本期最高返奖剩余额度不变；若一侧金额更大，只按抵扣后的差额对应净返奖占用。</p></div>
+            <div className="limit-example"><b>同玩法取最高示例</b><p>定位胆同一位置有 0–9 十个号码，赔率 1:10。号码 0 投 1,000 CNY、号码 1 投 2,000 CNY，只计算号码 1 对应的最高净返奖：2,000 ×（10 − 1）= 18,000 CNY；不与号码 0 的 9,000 CNY 累加。</p></div>
           </section>
         </div>
         <LimitFooter onClose={onClose} onSubmit={submit} />
