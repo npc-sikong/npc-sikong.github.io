@@ -21,6 +21,11 @@
   background: #fff4f4;
 }
 
+.risk-alert-banner.muted {
+  border-color: #dcdfe6;
+  background: #f5f7fa;
+}
+
 .risk-alert-banner-icon {
   display: grid;
   width: 40px;
@@ -35,6 +40,11 @@
 .risk-alert-banner.warning .risk-alert-banner-icon {
   color: #e54b4b;
   background: #ffe1e1;
+}
+
+.risk-alert-banner.muted .risk-alert-banner-icon {
+  color: #7d818a;
+  background: #e7e9ee;
 }
 
 .risk-alert-banner > div:nth-child(2) {
@@ -341,6 +351,44 @@
 
 .risk-edit-button:hover {
   background: #f0f2ff;
+}
+
+.risk-game-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.risk-mute-button,
+.risk-restore-button {
+  display: inline-flex;
+  height: 28px;
+  align-items: center;
+  gap: 5px;
+  padding: 0 9px;
+  border-radius: 3px;
+  background: #fff;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.risk-mute-button {
+  color: #e54b4b;
+  border: 1px solid #f3b7b7;
+}
+
+.risk-mute-button:hover {
+  background: #fff1f1;
+}
+
+.risk-restore-button {
+  color: #529b2e;
+  border: 1px solid #b3d99f;
+}
+
+.risk-restore-button:hover {
+  background: #f0f9eb;
 }
 
 .risk-loading,

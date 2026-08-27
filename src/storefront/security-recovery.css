@@ -1,0 +1,358 @@
+.sfa-overlay--nested {
+  z-index: 720;
+}
+
+.sfa-recovery-modal,
+.sfa-requirement-modal {
+  max-height: min(90dvh, 760px);
+}
+
+.sfa-recovery-modal .sfa-modal-body,
+.sfa-requirement-modal .sfa-modal-body {
+  max-height: calc(90dvh - 124px);
+}
+
+.sfa-recovery-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 13px;
+}
+
+.sfa-recovery-heading > span {
+  display: grid;
+  flex: 0 0 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 13px;
+  color: #2864f0;
+  background: #edf3ff;
+}
+
+.sfa-recovery-heading > div {
+  display: flex;
+  flex-direction: column;
+}
+
+.sfa-recovery-heading small {
+  margin-top: 2px;
+  color: #7f8ca4;
+  font-size: 10px;
+}
+
+.sfa-recovery-methods {
+  display: grid;
+  gap: 8px;
+}
+
+.sfa-recovery-methods > button {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 100%;
+  min-height: 58px;
+  padding: 10px 12px;
+  border: 1px solid #e1e6ef;
+  border-radius: 11px;
+  color: #394861;
+  background: #f8f9fc;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sfa-recovery-methods > button.is-active {
+  border-color: #79a2ff;
+  color: #245bd6;
+  background: #eef4ff;
+  box-shadow: 0 0 0 2px rgba(40, 100, 240, .08);
+}
+
+.sfa-recovery-methods small {
+  color: #7f8ca4;
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.sfa-recovery-counter {
+  display: block;
+  margin-top: 4px;
+  color: #9ba5b5;
+  font-size: 9px;
+  text-align: right;
+}
+
+.sfa-recovery-upload {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 13px 0 10px;
+  padding: 11px;
+  border: 1px dashed #b8c8e3;
+  border-radius: 12px;
+  background: #f7faff;
+}
+
+.sfa-recovery-upload > div {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+}
+
+.sfa-recovery-upload small {
+  margin-top: 2px;
+  color: #7f8ca4;
+  font-size: 9px;
+}
+
+.sfa-recovery-upload > label {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+  padding: 7px 10px;
+  border-radius: 10px;
+  color: #2864f0;
+  background: #eaf1ff;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sfa-recovery-upload > input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+.sfa-recovery-previews {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin-bottom: 12px;
+}
+
+.sfa-recovery-previews figure {
+  position: relative;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid #e1e7f0;
+  border-radius: 10px;
+  background: #f3f6fb;
+}
+
+.sfa-recovery-previews img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+}
+
+.sfa-recovery-previews figcaption {
+  overflow: hidden;
+  padding: 4px 6px;
+  color: #6f7d92;
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sfa-recovery-previews button {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(25, 36, 58, .78);
+  cursor: pointer;
+}
+
+.sfa-security-form-card {
+  padding: 16px;
+}
+
+.sfa-security-form-card .sfa-section-title {
+  padding: 0;
+  font-size: 14px;
+}
+
+.sfa-security-question-value {
+  margin-top: 11px;
+  padding: 14px 12px;
+  border: 1px solid #dce4f1;
+  border-radius: 11px;
+  color: #5a6880;
+  background: #f0f4fc;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.sfa-security-tip-line {
+  margin: 7px 0 0 !important;
+  color: #6d7da0 !important;
+  font-size: 12px;
+}
+
+.sfa-security-submit {
+  display: flex;
+  margin-top: 16px;
+}
+
+.sfa-requirement-entry {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  min-height: 34px;
+  padding: 6px 9px;
+  border: 1px solid #e2e8f2;
+  border-radius: 8px;
+  color: #52617a;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sfa-requirement-entry span {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.sfa-requirement-entry em {
+  color: #2864f0;
+  font-size: 10px;
+  font-style: normal;
+}
+
+.sfa-requirement-entry small {
+  margin-left: auto;
+  color: #8a96aa;
+  font-size: 9px;
+}
+
+.sfa-requirement-summary {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 3px 7px;
+  align-items: center;
+  padding: 11px;
+  border-radius: 10px;
+  color: #2864f0;
+  background: #edf4ff;
+}
+
+.sfa-requirement-summary span {
+  grid-row: 1 / span 2;
+  font-weight: 700;
+}
+
+.sfa-requirement-summary b {
+  color: #273247;
+  font-size: 13px;
+}
+
+.sfa-requirement-summary small {
+  color: #79869b;
+  font-size: 10px;
+}
+
+.sfa-requirement-section {
+  padding: 12px 1px;
+  border-bottom: 1px solid #edf0f5;
+  color: #556178;
+  font-size: 11px;
+  line-height: 1.65;
+}
+
+.sfa-requirement-section:last-child {
+  border-bottom: 0;
+}
+
+.sfa-requirement-section h3 {
+  margin: 0 0 7px;
+  color: #273247;
+  font-size: 13px;
+}
+
+.sfa-requirement-section p,
+.sfa-requirement-section ul {
+  margin: 0;
+}
+
+.sfa-requirement-section ul {
+  padding-left: 18px;
+}
+
+.sfa-requirement-section li + li {
+  margin-top: 4px;
+}
+
+.sfa-requirement-logic + .sfa-requirement-logic {
+  margin-top: 9px;
+}
+
+.sfa-requirement-logic > b {
+  display: block;
+  margin-bottom: 2px;
+  color: #40506a;
+}
+
+.sfa-requirement-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.sfa-requirement-tags span {
+  padding: 3px 7px;
+  border-radius: 6px;
+  color: #4d6fa9;
+  background: #f0f4fa;
+  font-size: 9px;
+}
+
+.sfa-requirement-history {
+  display: grid;
+  gap: 8px;
+}
+
+.sfa-requirement-history article {
+  padding: 9px;
+  border-radius: 8px;
+  background: #f7f8fb;
+}
+
+.sfa-requirement-history article > b,
+.sfa-requirement-history article > small {
+  display: block;
+}
+
+.sfa-requirement-history article > small {
+  margin: 2px 0 5px;
+  color: #8b95a7;
+  font-size: 9px;
+}
+
+@media (max-width: 350px) {
+  .sfa-recovery-upload {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .sfa-recovery-upload > label {
+    justify-content: center;
+  }
+
+  .sfa-requirement-entry small {
+    display: none;
+  }
+}

@@ -173,6 +173,67 @@
   font-size: 12px;
 }
 
+.limit-summary-currencies {
+  display: flex;
+  flex: 0 0 auto !important;
+  gap: 6px;
+}
+
+.limit-summary-currencies span {
+  padding: 4px 8px;
+  color: #4a5dff;
+  border-radius: 3px;
+  background: #fff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.game-currency-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.game-currency-card {
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  background: #fafbfc;
+}
+
+.game-currency-card-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #303133;
+}
+
+.game-currency-card-header svg {
+  color: #4a5dff;
+}
+
+.game-currency-card-header span {
+  margin-left: auto;
+  color: #909399;
+  font-size: 12px;
+}
+
+.game-currency-card .limit-field {
+  grid-template-columns: 1fr;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.game-currency-card .limit-field > span {
+  padding-top: 0;
+  text-align: left;
+}
+
+.game-currency-card .limit-number-input {
+  max-width: none;
+}
+
 .limit-number-input {
   display: flex;
   width: 100%;
@@ -254,21 +315,6 @@
   margin-bottom: 4px;
 }
 
-.limit-field-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px 18px;
-}
-
-.limit-field-grid .limit-field {
-  grid-template-columns: 112px minmax(0, 1fr);
-  margin-top: 0;
-}
-
-.limit-field-grid .limit-number-input {
-  max-width: none;
-}
-
 .limit-section-note {
   margin-top: 13px;
   color: #909399;
@@ -313,9 +359,7 @@
     max-height: calc(100vh - 24px);
   }
 
-  .limit-field,
-  .limit-field-grid,
-  .limit-field-grid .limit-field {
+  .limit-field {
     grid-template-columns: 1fr;
     gap: 6px;
   }
@@ -324,43 +368,12 @@
     padding-top: 0;
     text-align: left;
   }
-}
 
-.closing-time-modal-field > div {
-  max-width: 420px;
-}
+  .game-currency-grid {
+    grid-template-columns: 1fr;
+  }
 
-.closing-time-control > div {
-  display: flex;
-  height: 32px;
-  overflow: hidden;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-  background: #fff;
-}
-
-.closing-time-control input {
-  min-width: 0;
-  flex: 1;
-  padding: 0 11px;
-  color: #606266;
-  border: 0;
-  outline: 0;
-  background: transparent;
-}
-
-.closing-time-control > div > span {
-  display: grid;
-  min-width: 48px;
-  place-items: center;
-  color: #606266;
-  border-left: 1px solid #dcdfe6;
-  background: #f5f7fa;
-}
-
-.closing-time-control > small {
-  display: block;
-  margin-top: 5px;
-  color: #909399;
-  line-height: 1.5;
+  .limit-summary-currencies {
+    display: none;
+  }
 }

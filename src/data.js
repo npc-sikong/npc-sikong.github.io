@@ -1,6 +1,7 @@
 export const navGroups = [
   {
     label: '会员管理', icon: 'Users', children: [
+      ['/member/security-recovery', '密保找回'],
       ['/member/wage-report', '会员工资报表'],
       ['/member/wallet', '会员钱包列表'],
       ['/member/tag', '会员标签'],
@@ -23,7 +24,6 @@ export const navGroups = [
   {
     label: '代理管理', icon: 'UserRound', children: [
       ['/agent/profile', '代理资料'],
-      ['/agent/team-analysis', '团队分析表'],
       ['/agent/invite-link', '邀请链接'],
       ['/agent/income', '推广收益明细'],
       ['/agent/user-default-scheme', '默认赔率返水方案'],
@@ -54,25 +54,34 @@ export const navGroups = [
     ],
   },
   {
+    label: '数据报表管理', icon: 'ChartNoAxesCombined', children: [
+      ['/finance/wallet-reconciliation', '钱包资金对账'],
+      ['/agent/team-analysis', '团队分析表'],
+      ['/member/analysis', '会员分析表'],
+      ['/finance/red-packet-quota', '红包领取次数'],
+      ['/finance/red-packet-receive', '红包领取记录'],
+      ['/finance/red-packet', '红包发放记录'],
+      ['/finance/currency-exchange-record', '货币兑换记录'],
+      ['/finance/user-change', '用户账变记录'],
+      ['/finance/finance-data', '财务数据表'],
+      ['/finance/market-data', '市场数据表'],
+    ],
+  },
+  {
     label: '风控管理', icon: 'ShieldAlert', children: [
       ['/risk/game-profit-loss', '游戏盈亏风控设置'],
+      ['/risk/member-rule-setting', '会员风控规则设置'],
+      ['/risk/member-list', '风控会员列表'],
     ],
   },
   {
     label: '资金管理', icon: 'WalletCards', children: [
       ['/finance/turnover-requirement', '流水要求'],
-      ['/finance/red-packet-quota', '红包领取次数'],
-      ['/finance/red-packet-receive', '红包领取记录'],
-      ['/finance/red-packet', '红包发放记录'],
       ['/finance/settlement-service-fee', '结算服务费'],
-      ['/finance/currency-exchange-record', '兑换记录'],
       ['/finance/fixed-wallet', '固率钱包'],
       ['/finance/currency-exchange', '货币兑换'],
       ['/finance/fund-pool-address', '资金池地址'],
-      ['/finance/user-change', '用户账变记录'],
-      ['/finance/finance-data', '财务数据表'],
       ['/finance/withdraw-order', '提现订单管理'],
-      ['/finance/market-data', '市场数据表'],
       ['/finance/recharge-order', '充值订单管理'],
       ['/finance/game-wallet', '游戏钱包地址列表'],
       ['/finance/bank', '银行列表'],
@@ -190,10 +199,54 @@ export const teamAnalysisRows = [
   },
 ]
 
+// 会员分析只展示当前会员本人的演示汇总，不复用团队分析中的团队合计。
+export const memberAnalysisRows = [
+  {
+    id: '133', username: 'evan777', parentMember: '-', status: '启用',
+    turnover: { USDT: 750, TRX: 5500, CNY: 4200 }, recharge: { USDT: 100, TRX: 800, CNY: 600 },
+    profitLoss: { USDT: -45, TRX: 220, CNY: -300 }, wage: { USDT: 20.25, TRX: 148.5, CNY: 113.4 },
+  },
+  {
+    id: '185', username: 'sky185', parentMember: 'evan777 / 133', status: '启用',
+    turnover: { USDT: 800, TRX: 5400, CNY: 4600 }, recharge: { USDT: 150, TRX: 400, CNY: 300 },
+    profitLoss: { USDT: -70, TRX: -320, CNY: -360 }, wage: { USDT: 21.6, TRX: 145.8, CNY: 124.2 },
+  },
+  {
+    id: '219', username: 'mango219', parentMember: 'evan777 / 133', status: '启用',
+    turnover: { USDT: 600, TRX: 2800, CNY: 3600 }, recharge: { USDT: 0, TRX: 0, CNY: 0 },
+    profitLoss: { USDT: 24, TRX: -196, CNY: 288 }, wage: { USDT: 16.2, TRX: 75.6, CNY: 97.2 },
+  },
+  {
+    id: '241', username: 'nova241', parentMember: 'sky185 / 185', status: '启用',
+    turnover: { USDT: 400, TRX: 1800, CNY: 2400 }, recharge: { USDT: 200, TRX: 800, CNY: 600 },
+    profitLoss: { USDT: -36, TRX: 126, CNY: -192 }, wage: { USDT: 10.8, TRX: 48.6, CNY: 64.8 },
+  },
+  {
+    id: '288', username: 'orbit288', parentMember: '-', status: '启用',
+    turnover: { USDT: 4900, TRX: 16000, CNY: 28000 }, recharge: { USDT: 900, TRX: 3500, CNY: 5200 },
+    profitLoss: { USDT: -380, TRX: 850, CNY: -2400 }, wage: { USDT: 132.3, TRX: 432, CNY: 756 },
+  },
+  {
+    id: '291', username: 'evanmm88', parentMember: 'orbit288 / 288', status: '启用',
+    turnover: { USDT: 2200, TRX: 7100, CNY: 13200 }, recharge: { USDT: 550, TRX: 1800, CNY: 2800 },
+    profitLoss: { USDT: -140, TRX: -520, CNY: -940 }, wage: { USDT: 59.4, TRX: 191.7, CNY: 356.4 },
+  },
+  {
+    id: '301', username: 'test301', parentMember: 'orbit288 / 288', status: '停用',
+    turnover: { USDT: 0, TRX: 0, CNY: 0 }, recharge: { USDT: 0, TRX: 0, CNY: 0 },
+    profitLoss: { USDT: 0, TRX: 0, CNY: 0 }, wage: { USDT: 0, TRX: 0, CNY: 0 },
+  },
+]
+
 export const pageConfigs = {
   '/version-notes': page('版本说明', { type: 'version-notes' }),
   '/workbench': page('工作台', { type: 'dashboard' }),
+  '/member/security-recovery': page('密保找回', { type: 'security-recovery' }),
+  '/finance/wallet-reconciliation': page('钱包资金对账', { type: 'wallet-reconciliation' }),
   '/risk/game-profit-loss': page('游戏盈亏风控设置', { type: 'game-risk-control' }),
+  '/risk/member-rule-setting': page('会员风控规则设置', { type: 'member-risk-rules' }),
+  '/risk/member-list': page('风控会员列表', { type: 'risk-member-list' }),
+  '/member/analysis': page('会员分析表', { type: 'member-analysis', count: memberAnalysisRows.length }),
 
   '/member/wage-report': page('会员工资报表', {
     count: 3584,
@@ -373,7 +426,7 @@ export const pageConfigs = {
     type: 'metric-table', subtitle: '仅后台可见。每条记录对应一笔中奖订单，服务费为展示派奖与实际结算派奖的封顶后差额。', filters: [f('订单 / 用户', '投注订单号或用户 ID'), f('游戏 ID'), s('币种')], rowActions: ['详情'],
     columns: ['投注订单', '用户 ID', '游戏 ID', '方案版本', '投注金额', '展示赔率', '服务费点数', '结算赔率', '展示派奖', '实际派奖', '服务费', '操作'], rows: [['HB2026082500591413305378668', '133', '2', '#2', '100.000000', '1.940', '0', '1.940', '194.000000', '194.000000', '0.000000'], ['GTB2026082414083585763540', '133', '8', '#2', '50.000000', '1.940', '0', '1.940', '97.000000', '97.000000', '0.000000']],
   }),
-  '/finance/currency-exchange-record': page('兑换记录', {
+  '/finance/currency-exchange-record': page('货币兑换记录', {
     filters: [f('兑换订单号', '精确查询订单号'), f('用户账户名', '模糊查询'), f('用户ID', '精确查询'), s('资金类型', '全部'), s('持有货币', '全部'), s('转换货币', '全部'), d('转换时间')], actions: ['更多筛选', '导出', '下载文件'],
     columns: ['兑换订单号', '用户ID', '用户账户名', '资金类型', '持有货币', '持有金额', '转换货币', '转换金额', '真实汇率', '用户汇率', '盈利比例', '盈利金额', '转换时间'],
   }),
@@ -529,7 +582,7 @@ export const modalSchemas = {
   '/permission/menu': { title: '新增菜单', fields: ['菜单类型', '父级菜单', '菜单名称', '菜单图标', '路由路径', '是否显示', '菜单状态', '菜单排序'] },
   '/lottery/game': {
     新增彩种: { title: '新增彩种', fields: ['彩种名称', '彩种编码', '玩法体系', '分类', '每期区块数', '链', '抽水率', '排序', 'USDT 最小/最大', 'TRX 最小/最大', 'CNY 最小/最大', '快捷金额', '状态', '热门'] },
-    编辑: { title: '编辑彩种', fields: ['彩种名称', '彩种编码', '玩法体系', '分类', '每期区块数', '封盘时间（秒）', '链', '抽水率', '排序', 'USDT 最小/最大', 'TRX 最小/最大', 'CNY 最小/最大', '快捷金额', '状态', '热门'] },
+    编辑: { title: '编辑彩种', fields: ['彩种名称', '彩种编码', '玩法体系', '分类', '每期区块数', '链', '抽水率', '排序', 'USDT 最小/最大', 'TRX 最小/最大', 'CNY 最小/最大', '快捷金额', '状态', '热门'] },
   },
   '/lottery/rule': { title: '编辑玩法', fields: ['玩法', '配置赔率', '允许额外抽水', '额外抽水率', '总注数', '可中注数', '单挑阈值', '单注限额', '单挑限额'] },
   '/setting/data-source': { title: '新增数据源', fields: ['名称', '数据源编码', 'API Key', '网关地址', '接口地址', '状态', '排序', '备注'] },
@@ -699,8 +752,9 @@ export const menuTreeRows = [
   ['代理管理', '目录', '♙', '-', '正常', '54', '2026-05-27 10:09:15'],
   ['运营管理', '目录', '▤', '-', '正常', '53', '2026-05-26 16:55:32'],
   ['游戏管理', '目录', '▧', '-', '正常', '52', '2026-05-26 15:04:45'],
-  ['风控管理', '目录', '!', '-', '正常', '51', '2026-08-27 04:20:00'],
-  ['资金管理', '目录', '▣', '-', '正常', '50', '2026-06-17 18:25:50'],
+  ['数据报表管理', '目录', '▥', '-', '正常', '51', '2026-08-28 03:30:00'],
+  ['风控管理', '目录', '!', '-', '正常', '50', '2026-08-27 04:20:00'],
+  ['资金管理', '目录', '▣', '-', '正常', '49', '2026-06-17 18:25:50'],
   ['权限管理', '目录', '▢', '-', '正常', '44', '2022-09-08 16:36:41'],
   ['自营区块彩票', '目录', '⚑', '-', '正常', '22', '2026-08-21 20:41:40'],
   ['系统设置', '目录', '⚙', '-', '正常', '0', '2022-09-08 16:38:42'],

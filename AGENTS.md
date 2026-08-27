@@ -22,7 +22,7 @@
   - `/setting/website/withdraw-account`
   - `/setting/website/information`
   - `/setting/website/protocol`
-- 当前运营后台覆盖 79 个非首页路由：76 个基础复刻路由、“版本说明”基础入口，以及新增的风控页面和“团队分析表”；用户端 H5 另覆盖目标站公开构建中的 66 个 `/front/pages/*` 路由。新增或修改页面时不得破坏其他路由。
+- 当前运营后台覆盖 84 个非首页路由：76 个基础复刻路由、“版本说明”基础入口，以及新增的三个风控页面、“团队分析表”、“会员分析表”、“密保找回”和“钱包资金对账”；用户端 H5 另覆盖目标站公开构建中的 66 个 `/front/pages/*` 路由。新增或修改页面时不得破坏其他路由。
 - 用户端必须按标准 H5 实现：以 375px 为设计基准，适配常见 320–430px 手机宽度，正确处理顶部/底部安全区、固定导航、独立滚动容器、底部弹层和触控热区；桌面预览只显示居中的 H5 画布，不拉伸成桌面站。
 - 用户端同样只使用确定性的前端模拟数据。登录、充值、提现、投注、红包、开户链接、验证码和区块验证均只产生本地状态或演示反馈，不调用真实业务接口，不发起真实资金、账号或链上操作。
 
@@ -34,7 +34,9 @@
 - `src/requirements.js`：后续新需求的唯一登记数据，以及版本、模块和菜单标记的派生规则。
 - `src/RequirementFeatures.jsx`：版本说明页面、页面说明入口和业务说明弹窗。
 - `src/requirements.css`：版本说明与业务说明功能的浅色主题样式。
-- `src/TeamAnalysisPage.jsx`、`src/team-analysis.css`：代理管理“团队分析表”的筛选、分币种报表、导出与专用浅色样式。
+- `src/TeamAnalysisPage.jsx`、`src/MemberAnalysisPage.jsx`、`src/team-analysis.css`：数据报表管理下团队与会员分析表的筛选、分币种报表、导出与专用浅色样式。
+- `src/WalletReconciliationPage.jsx`、`src/wallet-reconciliation.css`：数据报表管理“钱包资金对账”的四类钱包总览、逐币种账链差额、游戏钱包下钻和明细交互。
+- `src/SecurityRecoveryPage.jsx`、`src/security-recovery.css`：会员管理“密保找回”的筛选、材料详情、截图预览和审核演示。
 - `src/GameRiskControlPage.jsx`：风控页面及其前端演示状态与交互。
 - `src/risk-control.css`：风控页面和导航预警角标样式。
 - `src/main.jsx`：React/Vite 入口。

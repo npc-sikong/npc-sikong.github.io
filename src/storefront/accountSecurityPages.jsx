@@ -1,6 +1,8 @@
-import { useMemo, useState } from 'react'
-import { CreditCard, KeyRound, Landmark, LockKeyhole, Mail, ShieldCheck, Smartphone, UserRoundCheck, Wallet } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import { CreditCard, KeyRound, Landmark, LockKeyhole, ShieldCheck, Smartphone, UserRoundCheck, Wallet } from 'lucide-react'
 import { BANKS, SECURITY_MENU, SECURITY_QUESTIONS } from './accountData'
+import SecurityRecoveryModal from './SecurityRecoveryModal'
+import StorefrontRequirementEntry from './StorefrontRequirementEntry'
 import {
   ActionRow,
   Badge,
@@ -20,7 +22,6 @@ import {
   QrPlaceholder,
   SearchBox,
   SectionTitle,
-  Segmented,
   SelectField,
   SelectSheet,
   SummaryGrid,
@@ -38,12 +39,19 @@ const securityIcons = {
 export function SecurityCenterPage(props) {
   const actions = useSfaActions(props)
   const [logout, setLogout] = useState(false)
+  const securityConfigured = Boolean(props.securityProfile?.configured)
+  const securityMenu = useMemo(() => SECURITY_MENU.map((item) => item.id === 'question' ? {
+    ...item,
+    title: securityConfigured ? '更换密保' : '设置密保',
+    subtitle: securityConfigured ? '验证原密保后可设置新的问题和答案' : '首次设置密保问题、答案和提示',
+    status: securityConfigured ? '已设置' : '未设置',
+  } : item), [securityConfigured])
 
   return (
     <PageShell title="安全中心" onBack={actions.back} message={actions.localMessage}>
-      <Card className="sfa-security-banner"><div className="sfa-security-emblem"><ShieldCheck size={31} /></div><div><strong>账户保护已开启</strong><small>建议定期检查安全配置与恢复码</small></div><Badge tone="success">安全</Badge></Card>
+      <Card className="sfa-security-banner"><div className="sfa-security-emblem"><ShieldCheck size={31} /></div><div><strong>{securityConfigured ? '账户保护已开启' : '账户保护待完善'}</strong><small>{securityConfigured ? '建议定期检查安全配置与恢复方式' : '请先设置密保，再进行敏感账户操作'}</small></div><Badge tone={securityConfigured ? 'success' : 'warning'}>{securityConfigured ? '安全' : '待设置'}</Badge></Card>
       <SectionTitle>账户安全</SectionTitle>
-      <Card className="sfa-action-list">{SECURITY_MENU.map((item) => <ActionRow key={item.id} title={item.title} subtitle={item.subtitle} status={item.status} icon={securityIcons[item.id]} onClick={() => actions.go(item.route)} />)}</Card>
+      <Card className="sfa-action-list">{securityMenu.map((item) => <ActionRow key={item.id} title={item.title} subtitle={item.subtitle} status={item.status} icon={securityIcons[item.id]} onClick={() => actions.go(item.route)} />)}</Card>
       <Card className="sfa-action-list"><ActionRow title="退出登录" subtitle="清空当前设备的本地登录状态" icon={<UserRoundCheck size={20} />} danger onClick={() => setLogout(true)} /></Card>
       <ConfirmModal open={logout} title="确认退出当前账号？" content="退出后将清空本地登录态，需要重新登录才能继续访问会员页面。" confirmText="确认退出" danger onCancel={() => { setLogout(false); actions.notify('已取消退出') }} onConfirm={() => { setLogout(false); actions.notify('已退出登录', 'success'); actions.go('/pages/login/login') }} />
     </PageShell>
@@ -62,16 +70,16 @@ export function AccountBindPage(props) {
   const actions = useSfaActions(props)
   const requestedType = String(props?.type || props?.path || '').toLowerCase()
   const initialType = accountTypes.find((item) => requestedType.includes(item.value) && !item.disabled)?.value || 'trc20'
+  const securityConfigured = Boolean(props.securityProfile?.configured)
+  const currentQuestion = props.securityProfile?.question || ''
   const [type, setType] = useState(initialType)
-  const [formOpen, setFormOpen] = useState(Boolean(props?.type))
+  const [formOpen, setFormOpen] = useState(Boolean(props?.type) && securityConfigured)
   const [fundPassword, setFundPassword] = useState('')
-  const [question, setQuestion] = useState(SECURITY_QUESTIONS[0])
   const [answer, setAnswer] = useState('')
-  const [questionSheet, setQuestionSheet] = useState(false)
   const [bankSheet, setBankSheet] = useState(false)
   const [bankSearch, setBankSearch] = useState('')
   const [google, setGoogle] = useState(false)
-  const [pendingPayload, setPendingPayload] = useState(null)
+  const [recoveryOpen, setRecoveryOpen] = useState(false)
   const [bindings, setBindings] = useState({ trc20: ['TV8u...V6Y2P3s'], alipay: [], bank: [] })
   const [forms, setForms] = useState({
     trc20: { address: '' },
@@ -84,6 +92,12 @@ export function AccountBindPage(props) {
   const typeLabel = accountTypes.find((item) => item.value === type)?.label || '账户'
   const filteredBanks = BANKS.filter((item) => item.includes(bankSearch.trim()))
 
+  useEffect(() => {
+    if (securityConfigured) return
+    setFormOpen(false)
+    setRecoveryOpen(false)
+  }, [securityConfigured])
+
   const chooseType = (value) => {
     const item = accountTypes.find((candidate) => candidate.value === value)
     if (item?.disabled) return actions.notify(`${item.label}暂未开放`)
@@ -91,14 +105,24 @@ export function AccountBindPage(props) {
     setFormOpen(false)
   }
 
+  const openForm = () => {
+    if (!securityConfigured) {
+      actions.notify('请先设置密保，再绑定收款账户')
+      actions.go('/pages/security/security-question')
+      return
+    }
+    setFormOpen(true)
+  }
+
   const validate = () => {
     const form = forms[type]
+    if (!securityConfigured) return actions.notify('请先设置密保')
     if (type === 'trc20' && !/^T[A-Za-z0-9]{20,}$/.test(form.address)) return actions.notify('请输入正确的TRC20地址')
     if (type === 'alipay' && (!form.name.trim() || !form.account.trim())) return actions.notify('请填写完整绑定信息')
     if (type === 'bank' && (!form.bank || !form.name.trim() || !form.card.trim())) return actions.notify('请填写完整银行卡信息')
     if (!/^\d{6}$/.test(fundPassword)) return actions.notify('请输入6位资金密码')
     if (!answer.trim()) return actions.notify('请输入密保答案')
-    setPendingPayload(form)
+    if (props.securityProfile?.answer && answer.trim() !== props.securityProfile.answer) return actions.notify('密保答案不正确')
     setGoogle(true)
   }
 
@@ -112,11 +136,22 @@ export function AccountBindPage(props) {
     actions.notify(`绑定${typeLabel}成功`, 'success')
   }
 
+  const submitRecovery = (request) => {
+    const accepted = props.onSubmitRecovery?.(request)
+    if (accepted === false) {
+      actions.notify('已有待审核的密保找回申请，请勿重复提交')
+      return
+    }
+    setRecoveryOpen(false)
+    actions.notify(`找回申请 ${request.requestNo} 已提交`, 'success')
+  }
+
   return (
     <PageShell title="账户管理" onBack={actions.back} message={actions.localMessage} right={<button className="sfa-header-link" type="button" onClick={() => actions.go('/pages/service/index')}>帮助</button>}>
+      <StorefrontRequirementEntry path="/front/pages/security/account-bind" />
       <PillTabs items={accountTypes} value={type} onChange={chooseType} />
-      <SectionTitle action="+添加" onAction={() => setFormOpen(true)}>我的{typeLabel}</SectionTitle>
-      {currentBindings.length ? <Card className="sfa-binding-list">{currentBindings.map((binding, index) => <div key={`${binding}-${index}`}><span className="sfa-action-icon">{accountTypes.find((item) => item.value === type)?.icon}</span><span><strong>{binding}</strong><small>{type === 'trc20' ? 'TRC20协议' : '已完成安全验证'}</small></span><Badge tone="success">已绑定</Badge></div>)}</Card> : <EmptyState title={`暂无${typeLabel}`} description="点击右上角添加新的收款账户" action="+添加" onAction={() => setFormOpen(true)} />}
+      <SectionTitle action="+添加" onAction={openForm}>我的{typeLabel}</SectionTitle>
+      {currentBindings.length ? <Card className="sfa-binding-list">{currentBindings.map((binding, index) => <div key={`${binding}-${index}`}><span className="sfa-action-icon">{accountTypes.find((item) => item.value === type)?.icon}</span><span><strong>{binding}</strong><small>{type === 'trc20' ? 'TRC20协议' : '已完成安全验证'}</small></span><Badge tone="success">已绑定</Badge></div>)}</Card> : <EmptyState title={`暂无${typeLabel}`} description="点击右上角添加新的收款账户" action="+添加" onAction={openForm} />}
       <Hint tone="warning">为了您的资金安全，请确保绑定信息真实、准确。所有操作均为本地演示，不会写入真实账户。</Hint>
 
       <Modal open={formOpen} title={`绑定${typeLabel}`} onClose={() => setFormOpen(false)} footer={<PrimaryButton onClick={validate}>确认绑定</PrimaryButton>}>
@@ -124,15 +159,15 @@ export function AccountBindPage(props) {
         {type === 'alipay' ? <><Field label="姓名" value={forms.alipay.name} onChange={(value) => updateForm('name', value)} placeholder="请输入支付宝真实姓名" /><Field label="支付宝账号" value={forms.alipay.account} onChange={(value) => updateForm('account', value)} placeholder="请输入支付宝账号" /></> : null}
         {type === 'bank' ? <><SelectField label="开户银行" value={forms.bank.bank} onClick={() => setBankSheet(true)} /><Field label="姓名" value={forms.bank.name} onChange={(value) => updateForm('name', value)} placeholder="请输入持卡人姓名" /><Field label="银行卡号" value={forms.bank.card} onChange={(value) => updateForm('card', value.replace(/\D/g, ''))} placeholder="请输入银行卡号" /><div className="sfa-two-columns"><Field label="开户省份（选填）" value={forms.bank.province} onChange={(value) => updateForm('province', value)} /><Field label="开户城市（选填）" value={forms.bank.city} onChange={(value) => updateForm('city', value)} /></div><Field label="开户支行（选填）" value={forms.bank.branch} onChange={(value) => updateForm('branch', value)} /></> : null}
         <PasswordField label="资金密码" value={fundPassword} onChange={(value) => setFundPassword(value.replace(/\D/g, '').slice(0, 6))} />
-        <SelectField label="密保问题" value={question} onClick={() => setQuestionSheet(true)} />
-        <Field label="密保答案" value={answer} onChange={setAnswer} placeholder="请输入答案" />
+        <SelectField label="密保问题" value={currentQuestion || '尚未设置密保'} onClick={() => actions.notify('绑定时使用当前账户密保问题')} />
+        <Field label="密保答案" value={answer} onChange={setAnswer} placeholder="请输入答案" right={<button type="button" onClick={() => setRecoveryOpen(true)}>找回密保</button>} />
       </Modal>
-      <SelectSheet open={questionSheet} title="选择密保问题" options={SECURITY_QUESTIONS} value={question} onClose={() => setQuestionSheet(false)} onSelect={(value) => { setQuestion(value); setQuestionSheet(false) }} />
       <Modal open={bankSheet} title="选择开户银行" onClose={() => setBankSheet(false)}>
         <SearchBox value={bankSearch} onChange={setBankSearch} placeholder="搜索银行名称、简称或编码" onSearch={() => actions.notify(filteredBanks.length ? `找到${filteredBanks.length}家银行` : '没有匹配的银行')} />
         {filteredBanks.length ? <div className="sfa-option-list">{filteredBanks.map((bank) => <button type="button" key={bank} onClick={() => { updateForm('bank', bank); setBankSheet(false) }}><span><strong>{bank}</strong></span></button>)}</div> : <EmptyState title="没有匹配的银行" />}
       </Modal>
       <GoogleVerificationModal open={google} purpose={`绑定${typeLabel}`} onClose={() => setGoogle(false)} onVerified={finishBind} />
+      <SecurityRecoveryModal open={recoveryOpen} onClose={() => setRecoveryOpen(false)} onSubmit={submitRecovery} recoveryRequests={props.recoveryRequests} sourcePage={type === 'trc20' ? '添加TRC20地址' : `绑定${typeLabel}`} currentQuestion={currentQuestion} />
     </PageShell>
   )
 }
@@ -202,31 +237,90 @@ function BasicSecurityForm({ mode, ...props }) {
 
 function SecurityQuestionPage(props) {
   const actions = useSfaActions(props)
-  const [stage, setStage] = useState('verify')
+  const securityProfile = props.securityProfile || {}
+  const securityConfigured = Boolean(securityProfile.configured)
+  const suggestedQuestion = SECURITY_QUESTIONS.find((item) => item !== securityProfile.question) || SECURITY_QUESTIONS[0]
+  const [stage, setStage] = useState(securityConfigured ? 'verify' : 'setup')
   const [oldAnswer, setOldAnswer] = useState('')
-  const [question, setQuestion] = useState(SECURITY_QUESTIONS[1])
+  const [question, setQuestion] = useState(securityConfigured ? suggestedQuestion : SECURITY_QUESTIONS[2])
   const [questionSheet, setQuestionSheet] = useState(false)
   const [answer, setAnswer] = useState('')
   const [tip, setTip] = useState('')
   const [fund, setFund] = useState('')
-  const [google, setGoogle] = useState(false)
+  const [recoveryOpen, setRecoveryOpen] = useState(false)
+
+  useEffect(() => {
+    setStage(securityConfigured ? 'verify' : 'setup')
+    setOldAnswer('')
+    setAnswer('')
+    setTip('')
+    setFund('')
+    setQuestion(securityConfigured ? suggestedQuestion : SECURITY_QUESTIONS[2])
+  }, [securityConfigured])
+
+  const setupReady = Boolean(question && answer.trim() && tip.trim() && /^\d{6}$/.test(fund))
+  const verifyReady = Boolean(oldAnswer.trim() && /^\d{6}$/.test(fund))
+
+  const saveNewSecurity = () => {
+    if (!question || !answer.trim() || !tip.trim()) return actions.notify('请完整填写密保问题、答案和提示')
+    if (!/^\d{6}$/.test(fund)) return actions.notify('资金密码必须为6位数字')
+    const wasConfigured = securityConfigured
+    props.setSecurityProfile?.({
+      ...securityProfile,
+      configured: true,
+      question,
+      answer: answer.trim(),
+      tip: tip.trim(),
+      resetGranted: false,
+      updatedAt: new Date().toISOString(),
+    })
+    actions.notify(wasConfigured ? '密保更换成功' : '密保设置成功', 'success')
+    actions.back()
+  }
 
   const submit = () => {
     if (stage === 'verify') {
       if (!oldAnswer.trim()) return actions.notify('请输入密保答案')
+      if (!/^\d{6}$/.test(fund)) return actions.notify('请输入6位资金密码')
+      if (securityProfile.answer && oldAnswer.trim() !== securityProfile.answer) return actions.notify('密保答案不正确')
       setStage('edit')
-      return actions.notify('验证成功', 'success')
+      return actions.notify('原密保验证成功，请设置新密保', 'success')
     }
-    if (!question || !answer.trim()) return actions.notify('请选择密保问题并输入答案')
-    if (!/^\d{6}$/.test(fund)) return actions.notify('资金密码必须为6位数字')
-    setGoogle(true)
+    saveNewSecurity()
+  }
+
+  const submitRecovery = (request) => {
+    const accepted = props.onSubmitRecovery?.(request)
+    if (accepted === false) {
+      actions.notify('已有待审核的密保找回申请，请勿重复提交')
+      return
+    }
+    setRecoveryOpen(false)
+    actions.notify(`找回申请 ${request.requestNo} 已提交`, 'success')
   }
 
   return (
-    <PageShell title="更换密保" onBack={actions.back} message={actions.localMessage} bottom={<PrimaryButton onClick={submit}>{stage === 'verify' ? '验证原密保' : '确定'}</PrimaryButton>}>
-      <Card>{stage === 'verify' ? <><SelectField label="原密保问题" value="15.您的出生地是?" onClick={() => actions.notify('原密保问题不可修改')} /><Field label="请输入密保答案" value={oldAnswer} onChange={setOldAnswer} placeholder="请输入答案" /><small className="sfa-field-tip">密保提示：户口所在地</small></> : <><Hint>已通过原密保验证，请设置新的密保问题和答案。</Hint><SelectField label="请选择新密保问题" value={question} onClick={() => setQuestionSheet(true)} /><Field label="密保答案" value={answer} onChange={setAnswer} placeholder="请输入新的密保答案" /><Field label="密保提示" value={tip} onChange={setTip} placeholder="请输入密保提示" /><PasswordField label="资金密码" value={fund} onChange={(value) => setFund(value.replace(/\D/g, '').slice(0, 6))} /></>}</Card>
+    <PageShell title={securityConfigured ? '更换密保' : '设置密保'} onBack={actions.back} message={actions.localMessage}>
+      <StorefrontRequirementEntry path="/front/pages/security/security-question" />
+      {stage === 'verify' ? <Card className="sfa-security-form-card">
+        <SectionTitle>请输入密保答案</SectionTitle>
+        <div className="sfa-security-question-value">{securityProfile.question || '密保问题暂不可用'}</div>
+        <p className="sfa-security-tip-line">密保提示：{securityProfile.tip || '-'}</p>
+        <Field label="密保答案" value={oldAnswer} onChange={setOldAnswer} placeholder="请输入答案" right={<button type="button" onClick={() => setRecoveryOpen(true)}>找回密保</button>} />
+        <PasswordField label="资金密码" value={fund} onChange={(value) => setFund(value.replace(/\D/g, '').slice(0, 6))} placeholder="请输入资金密码" />
+        <div className="sfa-security-submit"><PrimaryButton disabled={!verifyReady} onClick={submit}>确定</PrimaryButton></div>
+      </Card> : <Card className="sfa-security-form-card">
+        {stage === 'edit' ? <Hint>原密保已验证，请设置新的密保问题、答案和提示。</Hint> : null}
+        <SectionTitle>{stage === 'edit' ? '请选择新的密保问题' : '请选择密保问题'}</SectionTitle>
+        <SelectField label="" value={question} onClick={() => setQuestionSheet(true)} />
+        <Field label="密保答案" value={answer} onChange={setAnswer} placeholder="请输入新的密保答案" />
+        <Field label="密保提示" value={tip} onChange={setTip} placeholder="请输入密保提示" />
+        <PasswordField label="资金密码" value={fund} onChange={(value) => setFund(value.replace(/\D/g, '').slice(0, 6))} placeholder="请输入资金密码" />
+        <div className="sfa-security-submit"><PrimaryButton disabled={!setupReady} onClick={submit}>确定</PrimaryButton></div>
+      </Card>}
+      <button className="sfa-service-link" type="button" onClick={() => actions.go('/pages/service/index')}>如需帮助，请联系客服</button>
       <SelectSheet open={questionSheet} title="选择密保问题" options={SECURITY_QUESTIONS} value={question} onClose={() => setQuestionSheet(false)} onSelect={(value) => { setQuestion(value); setQuestionSheet(false) }} />
-      <GoogleVerificationModal open={google} purpose="更换密保" onClose={() => setGoogle(false)} onVerified={() => { setGoogle(false); actions.notify('修改成功', 'success'); actions.back() }} />
+      <SecurityRecoveryModal open={recoveryOpen} onClose={() => setRecoveryOpen(false)} onSubmit={submitRecovery} recoveryRequests={props.recoveryRequests} sourcePage="更换密保" currentQuestion={securityProfile.question} />
     </PageShell>
   )
 }
@@ -255,7 +349,7 @@ function OnboardingPage(props) {
       <Card className="sfa-step-card"><div className={step >= 1 ? 'is-active' : ''}><b>1</b><span>修改登录密码</span></div><i /><div className={step >= 2 ? 'is-active' : ''}><b>2</b><span>资金密码和密保</span></div></Card>
       <Card>{step === 1 ? <><SectionTitle>修改初始登录密码</SectionTitle><PasswordField label="初始密码" value={form.old} onChange={(value) => update('old', value)} /><PasswordField label="新登录密码" value={form.next} onChange={(value) => update('next', value)} placeholder="请输入新登录密码（6-20位）" /><PasswordField label="确认新登录密码" value={form.confirm} onChange={(value) => update('confirm', value)} /></> : <><SectionTitle>设置资金密码和密保</SectionTitle><SelectField label="密保问题" value={form.question} onClick={() => setQuestions(true)} /><Field label="密保答案" value={form.answer} onChange={(value) => update('answer', value)} /><Field label="密保提示（可选）" value={form.tip} onChange={(value) => update('tip', value)} /><PasswordField label="资金密码" value={form.fund} onChange={(value) => update('fund', value.replace(/\D/g, '').slice(0, 6))} placeholder="请输入6位资金密码" /></>}</Card>
       <SelectSheet open={questions} title="选择密保问题" options={SECURITY_QUESTIONS} value={form.question} onClose={() => setQuestions(false)} onSelect={(value) => { update('question', value); setQuestions(false) }} />
-      <GoogleVerificationModal open={google} purpose="完成账户安全设置" onClose={() => setGoogle(false)} onVerified={() => { setGoogle(false); actions.notify('安全设置完成', 'success'); actions.go('/pages/user/user') }} />
+      <GoogleVerificationModal open={google} purpose="完成账户安全设置" onClose={() => setGoogle(false)} onVerified={() => { setGoogle(false); props.setSecurityProfile?.({ ...(props.securityProfile || {}), configured: true, question: form.question, answer: form.answer.trim(), tip: form.tip.trim(), resetGranted: false, updatedAt: new Date().toISOString() }); actions.notify('安全设置完成', 'success'); actions.go('/pages/user/user') }} />
     </PageShell>
   )
 }

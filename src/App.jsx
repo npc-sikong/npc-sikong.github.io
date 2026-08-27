@@ -3,6 +3,7 @@ import {
   Activity,
   Bell,
   CalendarDays,
+  ChartNoAxesCombined,
   Check,
   ChevronDown,
   ChevronLeft,
@@ -50,8 +51,13 @@ import { GameRedLimitDialog, LotteryPeriodLimitDialog } from './LimitSettingsDia
 import MarketConfigDialog from './MarketConfigDialog.jsx'
 import LotteryRulePage from './LotteryRulePage.jsx'
 import TeamAnalysisPage from './TeamAnalysisPage.jsx'
-import GameRiskControlPage, { GAME_RISK_PATH, getRiskAlertCount, initialGameRiskRows } from './GameRiskControlPage.jsx'
+import MemberAnalysisPage from './MemberAnalysisPage.jsx'
+import WalletReconciliationPage from './WalletReconciliationPage.jsx'
+import SecurityRecoveryPage from './SecurityRecoveryPage.jsx'
+import GameRiskControlPage, { getRiskAlertCount, initialGameRiskRows } from './GameRiskControlPage.jsx'
+import { initialMemberRiskRules, MemberRiskRulePage, RiskMemberListPage } from './MemberRiskPages.jsx'
 import { getGroupChangeType, getModuleChangeType, VERSION_NOTES_PATH } from './requirements.js'
+import { createInitialSecurityProfile, createInitialSecurityRecoveryRequests } from './securityRecoveryData.js'
 import StorefrontApp from './storefront/StorefrontApp.jsx'
 import { STOREFRONT_HOME, STOREFRONT_PREFIX } from './storefront/routes.js'
 
@@ -61,6 +67,7 @@ const iconMap = {
   UserRound,
   FileText,
   Gamepad2,
+  ChartNoAxesCombined,
   ShieldAlert,
   WalletCards,
   LockKeyhole,
@@ -108,6 +115,8 @@ function groupForPath(path) {
 function App() {
   const path = usePathname()
   const [toasts, setToasts] = useState([])
+  const [securityProfile, setSecurityProfile] = useState(createInitialSecurityProfile)
+  const [securityRecoveryRequests, setSecurityRecoveryRequests] = useState(createInitialSecurityRecoveryRequests)
 
   const toast = (message, type = 'success') => {
     const id = `${Date.now()}-${Math.random()}`
@@ -124,11 +133,34 @@ function App() {
     toast('演示原型已保持登录状态')
   }
 
-  if (path.startsWith(STOREFRONT_PREFIX)) return <StorefrontApp />
+  const submitSecurityRecovery = (request) => {
+    const hasPending = securityRecoveryRequests.some((item) => item.memberId === request.memberId && item.status === '待审核')
+    if (hasPending) return false
+    setSecurityRecoveryRequests((items) => [request, ...items])
+    return true
+  }
+
+  if (path.startsWith(STOREFRONT_PREFIX)) {
+    return (
+      <StorefrontApp
+        securityProfile={securityProfile}
+        setSecurityProfile={setSecurityProfile}
+        recoveryRequests={securityRecoveryRequests}
+        onSubmitRecovery={submitSecurityRecovery}
+      />
+    )
+  }
 
   return (
     <>
-      <AdminShell path={path === '/' || path === '/login' || path === '/workbench' ? '/member/list' : path} toast={toast} logout={logout} />
+      <AdminShell
+        path={path === '/' || path === '/login' || path === '/workbench' ? '/member/list' : path}
+        toast={toast}
+        logout={logout}
+        securityRecoveryRequests={securityRecoveryRequests}
+        setSecurityRecoveryRequests={setSecurityRecoveryRequests}
+        setSecurityProfile={setSecurityProfile}
+      />
       <ToastStack items={toasts} />
     </>
   )
@@ -147,7 +179,7 @@ function ToastStack({ items }) {
   )
 }
 
-function AdminShell({ path, toast, logout }) {
+function AdminShell({ path, toast, logout, securityRecoveryRequests, setSecurityRecoveryRequests, setSecurityProfile }) {
   const [collapsed, setCollapsed] = useState(false)
   const [openGroups, setOpenGroups] = useState(() => new Set([groupForPath(path)?.label].filter(Boolean)))
   const [openTabs, setOpenTabs] = useState([{ path: '/member/list', title: '会员列表' }])
@@ -157,6 +189,9 @@ function AdminShell({ path, toast, logout }) {
   const [confirm, setConfirm] = useState(null)
   const [settingsState, setSettingsState] = useState({ tabs: true, single: false, logo: true, breadcrumb: true, width: 200 })
   const [riskGames, setRiskGames] = useState(() => initialGameRiskRows.map((game) => ({ ...game })))
+  const [memberRiskRules, setMemberRiskRules] = useState(() => initialMemberRiskRules.map((rule) => ({ ...rule, conditions: rule.conditions.map((condition) => ({ ...condition })) })))
+  const [mutedMemberAlerts, setMutedMemberAlerts] = useState({})
+  const nextMemberRiskRuleId = useRef(Math.max(...initialMemberRiskRules.map((rule) => Number(rule.id) || 0)) + 1)
   const riskAlertCount = useMemo(() => getRiskAlertCount(riskGames), [riskGames])
 
   useEffect(() => {
@@ -246,7 +281,7 @@ function AdminShell({ path, toast, logout }) {
                   <Icon size={17} />
                   {!collapsed && <span>{navGroup.label}</span>}
                   {!collapsed && changeType && <em className="nav-change-mark">({changeType})</em>}
-                  {alertCount > 0 && <sup className="nav-alert-badge" aria-label={`${alertCount}个游戏触发亏损预警`}>{alertCount > 99 ? '99+' : alertCount}</sup>}
+                  {alertCount > 0 && <sup className="nav-alert-badge" aria-label={`${alertCount}个游戏需要亏损预警提醒`}>{alertCount > 99 ? '99+' : alertCount}</sup>}
                   {!collapsed && <ChevronDown className={open ? 'rotated' : ''} size={14} />}
                 </button>
                 {!collapsed && open && (
@@ -325,7 +360,7 @@ function AdminShell({ path, toast, logout }) {
 
         <main className="main-content">
           <ModuleRequirementFrame path={path}>
-            <PageRenderer path={path} config={pageConfigs[path] || pageConfigs['/member/list']} toast={toast} riskGames={riskGames} setRiskGames={setRiskGames} />
+            <PageRenderer path={path} config={pageConfigs[path] || pageConfigs['/member/list']} toast={toast} riskGames={riskGames} setRiskGames={setRiskGames} memberRiskRules={memberRiskRules} setMemberRiskRules={setMemberRiskRules} allocateMemberRiskRuleId={() => nextMemberRiskRuleId.current++} mutedMemberAlerts={mutedMemberAlerts} setMutedMemberAlerts={setMutedMemberAlerts} securityRecoveryRequests={securityRecoveryRequests} setSecurityRecoveryRequests={setSecurityRecoveryRequests} setSecurityProfile={setSecurityProfile} />
           </ModuleRequirementFrame>
         </main>
       </section>
@@ -338,7 +373,7 @@ function AdminShell({ path, toast, logout }) {
 
 function SideLink({ path, current, icon, label, collapsed, child, changeType }) {
   return (
-    <button className={`side-link ${child ? 'side-child' : ''} ${path === GAME_RISK_PATH ? 'compact-label' : ''} ${current === path ? 'active' : ''}`} onClick={() => go(path)} title={collapsed ? label : undefined}>
+    <button className={`side-link ${child ? 'side-child' : ''} ${path.startsWith('/risk/') ? 'compact-label' : ''} ${current === path ? 'active' : ''}`} onClick={() => go(path)} title={collapsed ? label : undefined}>
       {icon || <span className="child-dot" />}
       {!collapsed && <><span className="side-link-label">{label}</span>{changeType && <em className="nav-change-mark">({changeType})</em>}</>}
     </button>
@@ -377,9 +412,12 @@ function Switch({ checked, onChange, disabled }) {
   return <button type="button" className={`switch ${checked ? 'checked' : ''}`} disabled={disabled} onClick={onChange}><i /></button>
 }
 
-function PageRenderer({ path, config, toast, riskGames, setRiskGames }) {
+function PageRenderer({ path, config, toast, riskGames, setRiskGames, memberRiskRules, setMemberRiskRules, allocateMemberRiskRuleId, mutedMemberAlerts, setMutedMemberAlerts, securityRecoveryRequests, setSecurityRecoveryRequests, setSecurityProfile }) {
   if (config.type === 'version-notes') return <VersionNotesPage onNavigate={go} />
   if (config.type === 'game-risk-control') return <GameRiskControlPage games={riskGames} setGames={setRiskGames} toast={toast} />
+  if (config.type === 'member-risk-rules') return <MemberRiskRulePage rules={memberRiskRules} setRules={setMemberRiskRules} allocateRuleId={allocateMemberRiskRuleId} setMutedAlerts={setMutedMemberAlerts} toast={toast} />
+  if (config.type === 'risk-member-list') return <RiskMemberListPage rules={memberRiskRules} mutedAlerts={mutedMemberAlerts} setMutedAlerts={setMutedMemberAlerts} toast={toast} />
+  if (config.type === 'security-recovery') return <SecurityRecoveryPage requests={securityRecoveryRequests} setRequests={setSecurityRecoveryRequests} onApprove={(request) => { if (String(request.memberId) === '133') setSecurityProfile({ ...createInitialSecurityProfile(), resetGranted: true }) }} toast={toast} />
 
   const special = {
     dashboard: Dashboard,
@@ -394,6 +432,8 @@ function PageRenderer({ path, config, toast, riskGames, setRiskGames }) {
     'lottery-bet': LotteryBet,
     'lottery-rule': LotteryRulePage,
     'team-analysis': TeamAnalysisPage,
+    'member-analysis': MemberAnalysisPage,
+    'wallet-reconciliation': WalletReconciliationPage,
     'captcha-settings': CaptchaSettings,
     'service-settings': ServiceSettings,
     'email-settings': EmailSettings,
@@ -719,7 +759,6 @@ function lotteryGameEditValue(field, row = []) {
     玩法体系: row[3] || '',
     分类: row[2] || '',
     每期区块数: periodBlocks,
-    '封盘时间（秒）': '10',
     链: row[5] || '',
     抽水率: row[6] || '0',
     排序: row[9] || '0',
@@ -742,7 +781,6 @@ function FormDialog({ path, config, action, title, row, onClose, onSuccess }) {
   const fields = schema.fields.length ? schema.fields : ['名称', '状态', '排序', '备注']
   const [values, setValues] = useState(() => Object.fromEntries(fields.map((field, index) => {
     if (path === '/lottery/game' && action === '编辑') return [field, lotteryGameEditValue(field, row)]
-    if (field === '封盘时间（秒）') return [field, '10']
     const columnIndex = config.columns?.indexOf(field) ?? -1
     const existing = columnIndex >= 0 ? row?.[columnIndex] : row?.[index]
     return [field, existing ?? (/状态|热门|推荐|允许|强制更新|多处登录|置顶|是否显示|封盘自动/.test(field) ? true : '')]
@@ -785,15 +823,13 @@ function ModalField({ field, value, setValue, error }) {
   const isPassword = /密码|secret|key|密钥/i.test(lower)
   const isSelect = /类型|模式|平台|角色|场景|来源|币种|网络|分类|体系|方式|策略/.test(field)
   const isUpload = /图标|图片|封面|头像|横版图|LOGO/.test(field)
-  const isClosingSeconds = field === '封盘时间（秒）'
   return (
-    <label className={`modal-field ${isArea || isClosingSeconds ? 'field-wide' : ''} ${isClosingSeconds ? 'closing-time-modal-field' : ''}`}>
+    <label className={`modal-field ${isArea ? 'field-wide' : ''}`}>
       <span><em>*</em>{field}</span>
       {isSwitch ? <div className="switch-field"><Switch checked={value !== false} onChange={() => setValue(value === false)} /><small>{value === false ? '关闭' : '开启'}</small></div>
         : isUpload ? <button type="button" className="upload-box" onClick={() => {}}><Plus size={18} /><span>添加</span></button>
           : isArea ? <textarea value={value} onChange={(event) => setValue(event.target.value)} placeholder={`请输入${field}`} />
-            : isClosingSeconds ? <div className="closing-time-control"><div><input type="number" min="0" step="1" value={value} onChange={(event) => setValue(event.target.value)} /><span>秒</span></div><small>封盘后倒计时继续运行，仅停止接收新的投注。</small></div>
-              : <div className="input-wrap"><input type={isPassword ? 'password' : 'text'} value={value} onChange={(event) => setValue(event.target.value)} placeholder={isSelect ? '请选择' : `请输入${field}`} />{isSelect && <ChevronDown size={13} />}</div>}
+            : <div className="input-wrap"><input type={isPassword ? 'password' : 'text'} value={value} onChange={(event) => setValue(event.target.value)} placeholder={isSelect ? '请选择' : `请输入${field}`} />{isSelect && <ChevronDown size={13} />}</div>}
       {error && <small className="field-error">{error}</small>}
     </label>
   )
@@ -854,7 +890,7 @@ function DataPermissionPanel() {
 }
 
 function PermissionTree() {
-  return <div className="permission-tree">{navGroups.map((group) => <div key={group.label}><label><input type="checkbox" defaultChecked /><span>{group.label}</span></label><div>{group.children.filter(Array.isArray).slice(0, 5).map((child) => <label key={child[1]}><input type="checkbox" defaultChecked /><span>{child[1]}</span></label>)}</div></div>)}</div>
+  return <div className="permission-tree">{navGroups.map((group) => <div key={group.label}><label><input type="checkbox" defaultChecked /><span>{group.label}</span></label><div>{group.children.filter(Array.isArray).map((child) => <label key={child[1]}><input type="checkbox" defaultChecked /><span>{child[1]}</span></label>)}</div></div>)}</div>
 }
 
 function ConfirmDialog({ title, message, confirmText = '确定', onCancel, onConfirm, danger }) {

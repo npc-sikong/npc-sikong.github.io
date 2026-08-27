@@ -136,6 +136,7 @@ export function Field({ label, value, onChange, placeholder = '请输入', type 
         <Input
           value={value}
           type={textarea ? undefined : type}
+          autoComplete="off"
           disabled={disabled}
           placeholder={placeholder}
           maxLength={maxLength}
@@ -153,7 +154,7 @@ export function PasswordField({ label, value, onChange, placeholder = '请输入
     <label className="sfa-field">
       <span className="sfa-field-label">{label}{right}</span>
       <span className="sfa-input-wrap">
-        <input value={value} type={visible ? 'text' : 'password'} inputMode="numeric" placeholder={placeholder} onChange={(event) => onChange?.(event.target.value)} />
+        <input value={value} type={visible ? 'text' : 'password'} inputMode="numeric" autoComplete="new-password" placeholder={placeholder} onChange={(event) => onChange?.(event.target.value)} />
         <button className="sfa-input-icon" type="button" aria-label={visible ? '隐藏密码' : '显示密码'} onClick={() => setVisible((current) => !current)}>
           {visible ? <EyeOff size={18} /> : <Eye size={18} />}
         </button>
@@ -165,7 +166,7 @@ export function PasswordField({ label, value, onChange, placeholder = '请输入
 export function SelectField({ label, value, placeholder = '请选择', onClick, right }) {
   return (
     <button className="sfa-select-field" type="button" onClick={onClick}>
-      <span><small>{label}</small><strong className={value ? '' : 'is-placeholder'}>{value || placeholder}</strong></span>
+      <span>{label ? <small>{label}</small> : null}<strong className={value ? '' : 'is-placeholder'}>{value || placeholder}</strong></span>
       {right || <ChevronDown size={18} />}
     </button>
   )
@@ -214,10 +215,10 @@ export function QrPlaceholder({ label = '扫码查看', size = 'normal' }) {
   return <div className={`sfa-qr sfa-qr--${size}`} aria-label={label}><span>G6</span><small>{label}</small></div>
 }
 
-export function Modal({ open, title, children, onClose, footer, className = '' }) {
+export function Modal({ open, title, children, onClose, footer, className = '', overlayClassName = '' }) {
   if (!open) return null
   return (
-    <div className="sfa-overlay" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose?.()}>
+    <div className={`sfa-overlay ${overlayClassName}`.trim()} role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose?.()}>
       <section className={`sfa-modal ${className}`.trim()} role="dialog" aria-modal="true" aria-label={title}>
         <header><h2>{title}</h2><button type="button" aria-label="关闭" onClick={onClose}><X size={20} /></button></header>
         <div className="sfa-modal-body">{children}</div>

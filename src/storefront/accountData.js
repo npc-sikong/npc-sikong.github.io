@@ -17,10 +17,15 @@ export const WITHDRAW_METHODS = [
 ]
 
 export const SECURITY_QUESTIONS = [
-  '15.您的出生地是?',
-  '您第一所学校的名称是?',
-  '您最喜欢的城市是?',
-  '您母亲的姓名是?',
+  '1.您的学号是多少？',
+  '2.您小学班主任的姓名是？',
+  '3.您初中班主任的姓名是？',
+  '4.您高中班主任的姓名是？',
+  '5.您父亲的姓名是？',
+  '6.您母亲的姓名是？',
+  '7.您第一所学校的名称是？',
+  '8.您最喜欢的城市是？',
+  '15.您的出生地是？',
 ]
 
 export const BANKS = ['中国工商银行', '中国建设银行', '中国农业银行', '中国银行', '招商银行', '交通银行', '邮储银行', '平安银行']
@@ -87,7 +92,7 @@ export const SECURITY_MENU = [
   { id: 'google', title: '谷歌验证器管理', subtitle: '查看恢复码与重新绑定设置', route: '/pages/security/google-authenticator', status: '已绑定' },
   { id: 'account', title: '账户管理', subtitle: '可绑定TRC20地址、支付宝与银行卡', route: '/pages/security/account-bind', status: '已设置' },
   { id: 'fund', title: '修改资金密码', subtitle: '保障账户资金交易安全', route: '/pages/security/recharge-password', status: '已设置' },
-  { id: 'question', title: '修改密保', subtitle: '用于账户验证，保障账户安全', route: '/pages/security/security-question', status: '已设置' },
+  { id: 'question', title: '密保管理', subtitle: '设置或更换密保问题，保障账户安全', route: '/pages/security/security-question', status: '' },
   { id: 'login', title: '修改登录密码', subtitle: '定期修改，有效提高账户安全', route: '/pages/security/login-password', status: '' },
 ]
 

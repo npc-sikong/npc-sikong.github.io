@@ -186,19 +186,24 @@ export default function TeamAnalysisPage({ toast }) {
   const [page, setPage] = useState(1)
   const [metricDetail, setMetricDetail] = useState(null)
   const timer = useRef()
+  const toastRef = useRef(toast)
+
+  useEffect(() => {
+    toastRef.current = toast
+  }, [toast])
 
   useEffect(() => {
     const refresh = () => {
       setLoading(true)
       window.clearTimeout(timer.current)
-      timer.current = window.setTimeout(() => { setLoading(false); toast('团队分析数据已刷新') }, 500)
+      timer.current = window.setTimeout(() => { setLoading(false); toastRef.current('团队分析数据已刷新') }, 500)
     }
     window.addEventListener('demo-refresh', refresh)
     return () => {
       window.removeEventListener('demo-refresh', refresh)
       window.clearTimeout(timer.current)
     }
-  }, [toast])
+  }, [])
 
   const rowsWithMetrics = useMemo(() => teamAnalysisRows.map((row) => {
     const metricMembers = Object.fromEntries(Object.keys(METRIC_DEFINITIONS).map((metric) => [metric, getMetricMembers(row, metric, applied.start, applied.end)]))
@@ -289,8 +294,10 @@ export default function TeamAnalysisPage({ toast }) {
     const anchor = document.createElement('a')
     anchor.href = url
     anchor.download = `团队分析表-${applied.start}-${applied.end}.csv`
+    document.body.appendChild(anchor)
     anchor.click()
-    URL.revokeObjectURL(url)
+    anchor.remove()
+    window.setTimeout(() => URL.revokeObjectURL(url), 0)
     toast(`已导出 ${filteredRows.length} 条团队分析数据`)
   }
 

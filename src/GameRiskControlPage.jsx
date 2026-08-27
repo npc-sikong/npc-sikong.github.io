@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { AlertTriangle, CheckCircle2, Gauge, Pencil, RotateCcw, Search, ShieldAlert, X } from 'lucide-react'
+import { AlertTriangle, BellOff, BellRing, CheckCircle2, Gauge, Pencil, RotateCcw, Search, ShieldAlert, X } from 'lucide-react'
+import { MemberRiskConfirmDialog } from './MemberRiskPages.jsx'
 
 export const GAME_RISK_PATH = '/risk/game-profit-loss'
 export const DEFAULT_RISK_BASE_DATE = '2026-08-27'
@@ -67,7 +68,7 @@ export function getGamePeriodRows(game, baseDate = DEFAULT_RISK_BASE_DATE) {
 }
 
 export function getRiskAlertCount(games) {
-  return new Set(games.filter((game) => RISK_PERIODS.some((period) => getRiskMetrics(game, period).triggered)).map((game) => game.id)).size
+  return new Set(games.filter((game) => !game.reminderMuted && RISK_PERIODS.some((period) => getRiskMetrics(game, period).triggered)).map((game) => game.id)).size
 }
 
 export default function GameRiskControlPage({ games, setGames, toast }) {
@@ -75,19 +76,24 @@ export default function GameRiskControlPage({ games, setGames, toast }) {
   const [draft, setDraft] = useState({ keyword: '', type: '全部', status: '全部' })
   const [applied, setApplied] = useState({ keyword: '', type: '全部', status: '全部' })
   const [editing, setEditing] = useState(null)
+  const [muting, setMuting] = useState(null)
   const [loading, setLoading] = useState(false)
   const timer = useRef()
 
   const metricRows = useMemo(() => games.map((game) => {
     const periods = getGamePeriodRows(game, baseDate)
-    return { ...game, periods, triggered: periods.some((period) => period.triggered) }
+    const triggered = periods.some((period) => period.triggered)
+    return { ...game, periods, triggered, activeReminder: triggered && !game.reminderMuted }
   }), [games, baseDate])
-  const alertCount = metricRows.filter((game) => game.triggered).length
+  const rawAlertCount = metricRows.filter((game) => game.triggered).length
+  const alertCount = metricRows.filter((game) => game.activeReminder).length
+  const mutedAlertCount = rawAlertCount - alertCount
   const visibleRows = metricRows.filter((game) => {
     const keyword = applied.keyword.trim().toLowerCase()
     if (keyword && !`${game.name} ${game.code} ${game.source}`.toLowerCase().includes(keyword)) return false
     if (applied.type !== '全部' && game.type !== applied.type) return false
     if (applied.status === '已触发' && !game.triggered) return false
+    if (applied.status === '已忽略' && !(game.triggered && game.reminderMuted)) return false
     if (applied.status === '正常' && game.triggered) return false
     return true
   })
@@ -128,11 +134,22 @@ export default function GameRiskControlPage({ games, setGames, toast }) {
     toast('五个周期的亏损预警额度已保存，预警数量已重新计算')
   }
 
+  const muteReminder = () => {
+    setGames((items) => items.map((game) => game.id === muting.id ? { ...game, reminderMuted: true } : game))
+    toast(`已关闭“${muting.name}”的亏损预警提醒，风险状态仍保留`)
+    setMuting(null)
+  }
+
+  const restoreReminder = (game) => {
+    setGames((items) => items.map((item) => item.id === game.id ? { ...item, reminderMuted: false } : item))
+    toast(`已恢复“${game.name}”的亏损预警提醒`)
+  }
+
   return (
     <div className="risk-page">
-      <section className={`risk-alert-banner ${alertCount ? 'warning' : 'safe'}`}>
-        <div className="risk-alert-banner-icon">{alertCount ? <AlertTriangle size={22} /> : <CheckCircle2 size={22} />}</div>
-        <div><b>{alertCount ? `当前有 ${alertCount} 个游戏触发亏损预警` : '当前没有游戏触发亏损预警'}</b><p>今日、近3日、近7日、近15日或近30日任一周期触发即预警；同一游戏只计数 1 次。</p></div>
+      <section className={`risk-alert-banner ${alertCount ? 'warning' : rawAlertCount ? 'muted' : 'safe'}`}>
+        <div className="risk-alert-banner-icon">{alertCount ? <AlertTriangle size={22} /> : rawAlertCount ? <BellOff size={22} /> : <CheckCircle2 size={22} />}</div>
+        <div><b>{alertCount ? `当前有 ${alertCount} 个游戏需要亏损预警提醒` : rawAlertCount ? '当前触发预警的游戏均已设置不再提醒' : '当前没有游戏触发亏损预警'}</b><p>原始风险状态始终保留；侧栏红色角标只统计已触发且尚未设置不再提醒的游戏。{mutedAlertCount > 0 ? ` 当前另有 ${mutedAlertCount} 个触发游戏已关闭提醒。` : ''}</p></div>
         {alertCount > 0 && <span>{alertCount}</span>}
       </section>
 
@@ -140,7 +157,7 @@ export default function GameRiskControlPage({ games, setGames, toast }) {
         <div className="risk-filter-grid">
           <label><span>游戏关键词</span><input value={draft.keyword} onChange={(event) => setDraft((old) => ({ ...old, keyword: event.target.value }))} placeholder="游戏名称 / 编码 / 厂商" /></label>
           <label><span>游戏类型</span><select value={draft.type} onChange={(event) => setDraft((old) => ({ ...old, type: event.target.value }))}><option>全部</option>{types.map((item) => <option key={item}>{item}</option>)}</select></label>
-          <label><span>预警状态</span><select value={draft.status} onChange={(event) => setDraft((old) => ({ ...old, status: event.target.value }))}><option>全部</option><option>已触发</option><option>正常</option></select></label>
+          <label><span>预警状态</span><select value={draft.status} onChange={(event) => setDraft((old) => ({ ...old, status: event.target.value }))}><option>全部</option><option>已触发</option><option>已忽略</option><option>正常</option></select></label>
           <div className="risk-filter-actions"><button className="btn btn-primary" onClick={query}><Search size={14} />查询</button><button className="btn btn-default" onClick={reset}><RotateCcw size={14} />重置</button></div>
         </div>
       </section>
@@ -165,7 +182,7 @@ export default function GameRiskControlPage({ games, setGames, toast }) {
                       <td>{formatMoney(period.warningLimit)} <small>CNY</small></td>
                       <td><div className={`risk-usage ${period.triggered ? 'danger' : ''}`}><div><i style={{ width: `${Math.min(100, period.riskValue)}%` }} /></div><span>{period.riskValue.toFixed(1)}%</span></div></td>
                       <td>{period.triggered ? <span className="risk-status triggered"><AlertTriangle size={13} />已触发</span> : <span className="risk-status normal"><CheckCircle2 size={13} />正常</span>}</td>
-                      {periodIndex === 0 && <td rowSpan="5" className="risk-game-fixed"><button className="risk-edit-button" onClick={() => setEditing(game)}><Pencil size={13} />设置预警</button></td>}
+                      {periodIndex === 0 && <td rowSpan="5" className="risk-game-fixed"><div className="risk-game-actions"><button className="risk-edit-button" onClick={() => setEditing(game)}><Pencil size={13} />设置预警</button>{game.triggered && (game.reminderMuted ? <button className="risk-restore-button" onClick={() => restoreReminder(game)}><BellRing size={13} />恢复提醒</button> : <button className="risk-mute-button" onClick={() => setMuting(game)}><BellOff size={13} />不再提醒</button>)}</div></td>}
                     </tr>
                   )))}
             </tbody>
@@ -174,6 +191,7 @@ export default function GameRiskControlPage({ games, setGames, toast }) {
       </section>
 
       {editing && <RiskLimitDialog game={editing} baseDate={baseDate} onClose={() => setEditing(null)} onSave={saveLimits} />}
+      {muting && <MemberRiskConfirmDialog title="不再提醒该游戏" message={`确定不再提醒“${muting.name}”的亏损预警吗？五个周期的盈亏、额度、风控盈亏值和已触发状态仍会保留。`} confirmText="不再提醒" onCancel={() => setMuting(null)} onConfirm={muteReminder} />}
     </div>
   )
 }

@@ -45,6 +45,13 @@ const guideFallbacks = {
   '/pages/hash/banker-player-guide': 'lucky-banker-player',
 }
 
+const defaultSecurityProfile = {
+  configured: false,
+  question: '',
+  answer: '',
+  tip: '',
+}
+
 function readLocation() {
   return `${window.location.pathname}${window.location.search}`
 }
@@ -111,9 +118,9 @@ function HijackGuidePage({ onBack, notify }) {
   )
 }
 
-function StorefrontPage({ route, targetPath, search, navigate, notify }) {
+function StorefrontPage({ route, targetPath, search, navigate, notify, securityProfile, setSecurityProfile, recoveryRequests, onSubmitRecovery }) {
   const componentPath = `${targetPath}${search}`
-  const common = { navigate, path: componentPath }
+  const common = { navigate, path: componentPath, securityProfile, setSecurityProfile, recoveryRequests, onSubmitRecovery }
 
   switch (route.renderer) {
     case 'home': return <HomePage onNavigate={navigate} initialTab={new URLSearchParams(search).get('tab') || 'hot'} />
@@ -156,9 +163,16 @@ function StorefrontPage({ route, targetPath, search, navigate, notify }) {
   }
 }
 
-export default function StorefrontApp() {
+export default function StorefrontApp({
+  securityProfile: controlledSecurityProfile,
+  setSecurityProfile: controlledSetSecurityProfile,
+  recoveryRequests: controlledRecoveryRequests,
+  onSubmitRecovery: controlledSubmitRecovery,
+} = {}) {
   const [location, setLocation] = useState(readLocation)
   const [toast, setToast] = useState(null)
+  const [localSecurityProfile, setLocalSecurityProfile] = useState(defaultSecurityProfile)
+  const [localRecoveryRequests, setLocalRecoveryRequests] = useState([])
   const toastTimer = useRef(null)
   const localNavigationDepth = useRef(0)
   const pageStageRef = useRef(null)
@@ -166,6 +180,15 @@ export default function StorefrontApp() {
   const normalizedPath = normalizeStorefrontPath(pathname)
   const route = storefrontRouteMap[normalizedPath]
   const targetPath = route?.targetPath || '/pages/index/index'
+  const securityProfile = controlledSecurityProfile || localSecurityProfile
+  const setSecurityProfile = controlledSetSecurityProfile || setLocalSecurityProfile
+  const recoveryRequests = controlledRecoveryRequests || localRecoveryRequests
+
+  const submitRecovery = useCallback((request) => {
+    if (typeof controlledSubmitRecovery === 'function') return controlledSubmitRecovery(request)
+    setLocalRecoveryRequests((current) => [...current, request])
+    return request
+  }, [controlledSubmitRecovery])
 
   useEffect(() => {
     const onPopState = () => setLocation(readLocation())
@@ -231,7 +254,7 @@ export default function StorefrontApp() {
         </button>
       </div>
       <div className="storefront-page-stage" ref={pageStageRef}>
-        <StorefrontPage route={route} targetPath={targetPath} search={search} navigate={navigate} notify={notify} />
+        <StorefrontPage route={route} targetPath={targetPath} search={search} navigate={navigate} notify={notify} securityProfile={securityProfile} setSecurityProfile={setSecurityProfile} recoveryRequests={recoveryRequests} onSubmitRecovery={submitRecovery} />
       </div>
       <Toast open={Boolean(toast)} message={toast?.message} type={toast?.type} zIndex={2400} />
     </div>
