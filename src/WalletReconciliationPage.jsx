@@ -106,12 +106,12 @@ const GAME_WALLETS = buildGameWallets()
 
 const COLLECTION_WALLETS = [
   {
-    id: 'CW-001', type: 'collection', name: '会员资金归集主钱包', source: '会员充提钱包', address: 'TXCGJPhRwA6PLKNDWZum2qdc5i7JY2t5iY',
+    id: 'CW-001', type: 'collection', name: '归集钱包1', source: '会员充提钱包', address: 'TXCGJPhRwA6PLKNDWZum2qdc5i7JY2t5iY',
     chainUSDT: 186420.35, chainTRX: 928560.8, platformUSDT: 186420.35, platformTRX: 928560.8,
     usdtDifference: 0, trxDifference: 0, collectionStatus: '正常', lastCollection: '2026-08-28 05:16:42', syncedAt: '2026-08-28 05:17:08',
   },
   {
-    id: 'CW-002', type: 'collection', name: '游戏资金归集主钱包', source: '12个游戏外盘钱包', address: 'TUJf5xPxfxKA1zTDqidj2BPFfA272DBHx2',
+    id: 'CW-002', type: 'collection', name: '归集钱包2', source: '12个游戏外盘钱包', address: 'TUJf5xPxfxKA1zTDqidj2BPFfA272DBHx2',
     chainUSDT: 96382.68, chainTRX: 510280.4, platformUSDT: 96382.18, platformTRX: 510280.4,
     usdtDifference: 0.5, trxDifference: 0, collectionStatus: '正常', lastCollection: '2026-08-28 05:13:26', syncedAt: '2026-08-28 05:17:10',
   },
@@ -240,8 +240,9 @@ function WalletDetailModal({ row, onClose, onCopy }) {
   )
 }
 
-function StandardRowsTable({ rows, activeTab, loading, onCopy, onDetail }) {
+function StandardRowsTable({ rows, totalRows, activeTab, loading, onCopy, onDetail }) {
   const colSpan = activeTab === 'member' ? 11 : 9
+  const totals = sumRows(totalRows)
   return <div className="wr-table-scroll"><table className="wr-table wr-standard-table">
     <thead><tr>
       <th>钱包编号</th>{activeTab === 'member' && <><th>用户ID</th><th>用户名</th></>}<th>钱包名称 / 来源</th><th>TRON钱包地址</th><th>链上实际余额</th><th>平台记录余额</th><th>余额差值（仅计算）</th><th>归集 / 资金状态</th><th>最近同步</th><th>操作</th>
@@ -258,10 +259,20 @@ function StandardRowsTable({ rows, activeTab, loading, onCopy, onDetail }) {
       <td><span className="wr-time">{row.syncedAt}</span></td>
       <td><button type="button" className="wr-row-action" onClick={() => onDetail(row)}><Eye size={13} />详情</button></td>
     </tr>) : <tr><td colSpan={colSpan}><div className="wr-table-state empty">暂无符合条件的钱包</div></td></tr>}</tbody>
+    <tfoot><tr>
+      <td colSpan={activeTab === 'member' ? 5 : 3}><div className="wr-total-label"><b>总计</b><span>当前筛选结果 · {totalRows.length} 个钱包</span></div></td>
+      <td><CurrencyValues usdt={totals.chainUSDT} trx={totals.chainTRX} /></td>
+      <td><CurrencyValues usdt={totals.platformUSDT} trx={totals.platformTRX} /></td>
+      <td><CurrencyValues usdt={totals.usdtDifference} trx={totals.trxDifference} signed /></td>
+      <td>—</td><td>当前筛选</td><td>—</td>
+    </tr></tfoot>
   </table></div>
 }
 
-function GameSummaryTable({ rows, loading, onDrillDown }) {
+function GameSummaryTable({ rows, totalRows, loading, onDrillDown }) {
+  const totals = sumRows(totalRows)
+  const walletCount = totalRows.reduce((sum, row) => sum + Number(row.walletCount || 0), 0)
+  const pendingCount = totalRows.reduce((sum, row) => sum + Number(row.pendingCount || 0), 0)
   return <div className="wr-table-scroll"><table className="wr-table wr-game-summary-table">
     <thead><tr><th>游戏</th><th>游戏编码</th><th>用户钱包数</th><th>链上实际余额</th><th>平台记录余额</th><th>余额差值（仅计算）</th><th>待归集钱包</th><th>最近同步</th><th>操作</th></tr></thead>
     <tbody>{loading ? <tr><td colSpan="9"><div className="wr-table-state"><LoaderCircle className="wr-spin" size={22} />数据同步中...</div></td></tr> : rows.length ? rows.map((row) => <tr key={row.game}>
@@ -270,10 +281,19 @@ function GameSummaryTable({ rows, loading, onDrillDown }) {
       <td><span className={row.pendingCount ? 'wr-count-warning' : 'wr-count-ok'}>{row.pendingCount}</span></td><td><span className="wr-time">{row.syncedAt}</span></td>
       <td><button type="button" className="wr-row-action primary" onClick={() => onDrillDown(row.game)}><Users size={13} />查看用户钱包</button></td>
     </tr>) : <tr><td colSpan="9"><div className="wr-table-state empty">暂无符合条件的游戏钱包</div></td></tr>}</tbody>
+    <tfoot><tr>
+      <td colSpan="2"><div className="wr-total-label"><b>总计</b><span>当前筛选结果 · {totalRows.length} 个游戏</span></div></td>
+      <td><b>{walletCount}</b> 个</td>
+      <td><CurrencyValues usdt={totals.chainUSDT} trx={totals.chainTRX} /></td>
+      <td><CurrencyValues usdt={totals.platformUSDT} trx={totals.platformTRX} /></td>
+      <td><CurrencyValues usdt={totals.usdtDifference} trx={totals.trxDifference} signed /></td>
+      <td><span className={pendingCount ? 'wr-count-warning' : 'wr-count-ok'}>{pendingCount}</span></td><td>当前筛选</td><td>—</td>
+    </tr></tfoot>
   </table></div>
 }
 
-function GameWalletTable({ rows, loading, onCopy, onDetail }) {
+function GameWalletTable({ rows, totalRows, loading, onCopy, onDetail }) {
+  const totals = sumRows(totalRows)
   return <div className="wr-table-scroll"><table className="wr-table wr-game-wallet-table">
     <thead><tr><th>用户ID</th><th>用户名</th><th>对应游戏</th><th>游戏钱包地址</th><th>链上实际余额</th><th>平台记录余额</th><th>余额差值（仅计算）</th><th>归集状态</th><th>最近同步</th><th>操作</th></tr></thead>
     <tbody>{loading ? <tr><td colSpan="10"><div className="wr-table-state"><LoaderCircle className="wr-spin" size={22} />数据同步中...</div></td></tr> : rows.length ? rows.map((row) => <tr key={row.id}>
@@ -282,6 +302,13 @@ function GameWalletTable({ rows, loading, onCopy, onDetail }) {
       <td><CurrencyValues usdt={row.chainUSDT} trx={row.chainTRX} /></td><td><CurrencyValues usdt={row.platformUSDT} trx={row.platformTRX} /></td><td><CurrencyValues usdt={row.usdtDifference} trx={row.trxDifference} signed /></td>
       <td><CollectionBadge value={row.collectionStatus} /></td><td><span className="wr-time">{row.syncedAt}</span></td><td><button type="button" className="wr-row-action" onClick={() => onDetail(row)}><Eye size={13} />详情</button></td>
     </tr>) : <tr><td colSpan="10"><div className="wr-table-state empty">该游戏暂无符合条件的用户钱包</div></td></tr>}</tbody>
+    <tfoot><tr>
+      <td colSpan="4"><div className="wr-total-label"><b>总计</b><span>当前筛选结果 · {totalRows.length} 个游戏钱包</span></div></td>
+      <td><CurrencyValues usdt={totals.chainUSDT} trx={totals.chainTRX} /></td>
+      <td><CurrencyValues usdt={totals.platformUSDT} trx={totals.platformTRX} /></td>
+      <td><CurrencyValues usdt={totals.usdtDifference} trx={totals.trxDifference} signed /></td>
+      <td>—</td><td>当前筛选</td><td>—</td>
+    </tr></tfoot>
   </table></div>
 }
 
@@ -316,6 +343,7 @@ export default function WalletReconciliationPage({ toast }) {
   const [loading, setLoading] = useState(false)
   const [detail, setDetail] = useState(null)
   const [refreshCount, setRefreshCount] = useState(0)
+  const [balanceRefreshing, setBalanceRefreshing] = useState(false)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(15)
   const timerRef = useRef(null)
@@ -362,9 +390,6 @@ export default function WalletReconciliationPage({ toast }) {
     }
   }).filter(Boolean), [applied])
 
-  const overviewRows = activeSourceRows
-  const overview = useMemo(() => sumRows(overviewRows), [overviewRows])
-
   const categorySummaryRows = useMemo(() => [
     { key: 'member', label: '用户钱包', caption: '会员充值与提现钱包', flow: '会员充值 → 用户钱包 → 归集钱包', icon: Users, rows: MEMBER_WALLETS },
     { key: 'game', label: '游戏钱包', caption: '12 个游戏的用户外盘钱包', flow: '用户钱包 → 游戏钱包 → 游戏归集钱包', icon: Gamepad2, rows: GAME_WALLETS },
@@ -384,7 +409,6 @@ export default function WalletReconciliationPage({ toast }) {
   }), [])
 
   const pendingCollection = useMemo(() => sumRows([...MEMBER_WALLETS, ...GAME_WALLETS].filter((row) => row.collectionStatus !== '已归集')), [])
-  const collectionAvailable = useMemo(() => sumRows(COLLECTION_WALLETS), [])
 
   const switchTab = (key) => {
     setActiveTab(key)
@@ -395,19 +419,21 @@ export default function WalletReconciliationPage({ toast }) {
     setPage(1)
   }
 
-  const runLoading = useCallback((message) => {
+  const runLoading = useCallback((message, isBalanceRefresh = false) => {
     setLoading(true)
+    setBalanceRefreshing(isBalanceRefresh)
     window.clearTimeout(timerRef.current)
     timerRef.current = window.setTimeout(() => {
       setLoading(false)
+      setBalanceRefreshing(false)
+      if (isBalanceRefresh) setRefreshCount((count) => count + 1)
       notify(message)
     }, 460)
   }, [notify])
 
   useEffect(() => {
     const refresh = () => {
-      setRefreshCount((count) => count + 1)
-      runLoading('钱包链上余额与平台记录余额已重新同步')
+      runLoading('四类钱包当前余额已重新同步', true)
     }
     window.addEventListener('demo-refresh', refresh)
     return () => window.removeEventListener('demo-refresh', refresh)
@@ -432,8 +458,7 @@ export default function WalletReconciliationPage({ toast }) {
   }
 
   const refresh = () => {
-    setRefreshCount((count) => count + 1)
-    runLoading('已刷新链上余额与平台记录余额')
+    runLoading('用户、游戏、归集和代付钱包当前余额已刷新', true)
   }
 
   const copyAddress = async (address, message = '钱包地址已复制') => {
@@ -453,11 +478,28 @@ export default function WalletReconciliationPage({ toast }) {
   }
 
   const exportRows = () => {
+    const isGameSummary = activeTab === 'game' && !gameDetail
     const source = activeTab === 'overview'
       ? categorySummaryRows.map((row) => ({ ...row, id: row.key, name: row.label, address: '-', memberId: '-', username: '-', collectionStatus: `${row.walletCount}个钱包`, syncedAt: '2026-08-28 05:20:00' }))
-      : activeTab === 'game' && !gameDetail ? gameSummaryRows.map((row) => ({ ...row, id: row.gameCode, name: row.game, address: '-', memberId: '-', username: '-' })) : filteredRows
-    const headers = ['钱包编号', '用户ID', '用户名', '游戏/钱包名称', '钱包地址', '链上USDT', '链上TRX', '平台记录USDT', '平台记录TRX', 'USDT余额差值（仅计算）', 'TRX余额差值（仅计算）', '归集/资金状态', '最近同步']
-    const values = source.map((row) => [row.id, row.memberId || '-', row.username || '-', row.game || row.name, row.address, row.chainUSDT, row.chainTRX, row.platformUSDT, row.platformTRX, row.usdtDifference, row.trxDifference, row.collectionStatus || `${row.walletCount}个钱包`, row.syncedAt])
+      : isGameSummary ? gameSummaryRows : filteredRows
+    const headers = isGameSummary
+      ? ['游戏名称', '游戏编码', '用户钱包数', '链上USDT', '链上TRX', '平台记录USDT', '平台记录TRX', 'USDT余额差值（仅计算）', 'TRX余额差值（仅计算）', '待归集钱包', '最近同步']
+      : ['钱包编号', '用户ID', '用户名', '游戏/钱包名称', '钱包地址', '链上USDT', '链上TRX', '平台记录USDT', '平台记录TRX', 'USDT余额差值（仅计算）', 'TRX余额差值（仅计算）', '归集/资金状态', '最近同步']
+    const values = isGameSummary
+      ? source.map((row) => [row.game, row.gameCode, `${row.walletCount}个钱包`, row.chainUSDT, row.chainTRX, row.platformUSDT, row.platformTRX, row.usdtDifference, row.trxDifference, `${row.pendingCount}个`, row.syncedAt])
+      : source.map((row) => [row.id, row.memberId || '-', row.username || '-', row.game || row.name, row.address, row.chainUSDT, row.chainTRX, row.platformUSDT, row.platformTRX, row.usdtDifference, row.trxDifference, row.collectionStatus || `${row.walletCount}个钱包`, row.syncedAt])
+    if (activeTab !== 'overview') {
+      const totals = sumRows(source)
+      const walletCount = isGameSummary
+        ? source.reduce((sum, row) => sum + Number(row.walletCount || 0), 0)
+        : source.length
+      if (isGameSummary) {
+        const pendingCount = source.reduce((sum, row) => sum + Number(row.pendingCount || 0), 0)
+        values.push(['总计', `${source.length}个游戏`, `${walletCount}个钱包`, totals.chainUSDT, totals.chainTRX, totals.platformUSDT, totals.platformTRX, totals.usdtDifference, totals.trxDifference, `${pendingCount}个`, '当前筛选结果'])
+      } else {
+        values.push(['总计', '-', '-', `${walletCount}个钱包`, '-', totals.chainUSDT, totals.chainTRX, totals.platformUSDT, totals.platformTRX, totals.usdtDifference, totals.trxDifference, '-', '当前筛选结果'])
+      }
+    }
     const csv = [headers, ...values].map((row) => row.map(quoteCsv).join(',')).join('\n')
     const url = URL.createObjectURL(new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8' }))
     const anchor = document.createElement('a')
@@ -489,27 +531,36 @@ export default function WalletReconciliationPage({ toast }) {
     <section className="wr-intro">
       <div className="wr-intro-icon"><WalletCards size={24} /></div>
       <div><b>全量钱包资金人工对账</b><p>并列展示 TRON 链上实际余额与平台记录余额供财务人工核对；用户资金归集至归集钱包，12 个游戏的用户外盘钱包支持逐层下钻。</p></div>
-      <div className="wr-sync-info"><span>最近演示同步</span><b>2026-08-28 05:20:{String(refreshCount % 10).padStart(2, '0')}</b><small>确定性前端模拟数据</small></div>
-      <button type="button" className="btn btn-default" onClick={refresh}>{loading ? <LoaderCircle className="wr-spin" size={14} /> : <RefreshCw size={14} />}刷新余额</button>
+      <div className="wr-sync-info"><span>最近演示同步</span><b>2026-08-28 05:20:{String(refreshCount % 60).padStart(2, '0')}</b><small>确定性前端模拟数据</small></div>
     </section>
 
     <nav className="wr-wallet-tabs" aria-label="钱包类型">
       {TABS.map(({ key, label, icon: Icon }) => <button type="button" key={key} className={activeTab === key ? 'active' : ''} onClick={() => switchTab(key)}><Icon size={16} /><span>{label}</span>{key === 'game' && <em>12</em>}</button>)}
     </nav>
 
-    <section className="wr-overview">
-      <article><span>当前钱包数</span><b>{overviewRows.length}</b><small>{activeTab === 'game' ? '12 个游戏 × 8 个演示会员' : '当前钱包类型'}</small></article>
-      <article><span>链上实际余额</span><CurrencyValues usdt={overview.chainUSDT} trx={overview.chainTRX} /><small>从钱包维度汇总</small></article>
-      <article><span>平台记录余额</span><CurrencyValues usdt={overview.platformUSDT} trx={overview.platformTRX} /><small>平台钱包余额记录汇总</small></article>
-      <article><span>余额差值（仅计算）</span><CurrencyValues usdt={overview.usdtDifference} trx={overview.trxDifference} signed /><small>不生成自动对账结论，由财务人工判断</small></article>
+    <section className="wr-balance-summary">
+      <div className="wr-balance-summary-head">
+        <div><b>四类钱包当前余额</b><span>按钱包类型汇总当前 TRON 链上余额，USDT 与 TRX 独立展示</span></div>
+        <button type="button" className="btn btn-default" onClick={refresh} disabled={balanceRefreshing}>
+          {balanceRefreshing ? <LoaderCircle className="wr-spin" size={14} /> : <RefreshCw size={14} />}
+          {balanceRefreshing ? '刷新中...' : '刷新当前余额'}
+        </button>
+      </div>
+      <div className={`wr-overview${balanceRefreshing ? ' is-refreshing' : ''}`} aria-busy={balanceRefreshing}>
+        {categorySummaryRows.map(({ key, label, icon: Icon, walletCount, chainUSDT, chainTRX }) => <article key={key}>
+          <div className="wr-balance-card-title"><span><Icon size={16} /></span><b>{label}</b></div>
+          <CurrencyValues usdt={chainUSDT} trx={chainTRX} />
+          <small>{walletCount} 个钱包 · 当前链上余额</small>
+        </article>)}
+      </div>
+      <div className={`wr-overview wr-pending-overview${balanceRefreshing ? ' is-refreshing' : ''}`} aria-busy={balanceRefreshing}>
+        <article>
+          <div className="wr-balance-card-title"><span><RefreshCw size={16} /></span><b>待归集资金</b></div>
+          <CurrencyValues usdt={pendingCollection.chainUSDT} trx={pendingCollection.chainTRX} />
+          <small>用户及游戏钱包中待归集、归集中的当前链上余额</small>
+        </article>
+      </div>
     </section>
-
-    {activeTab === 'overview' && <section className="wr-operational-overview">
-      <article><span>待归集资金</span><CurrencyValues usdt={pendingCollection.chainUSDT} trx={pendingCollection.chainTRX} /><small>用户及游戏钱包中待归集、归集中的链上余额</small></article>
-      <article><span>游戏钱包完整率</span><b>100.00%</b><strong>96 / 96</strong><small>12 个游戏 × 8 名演示会员，钱包均已生成</small></article>
-      <article><span>归集钱包可用资金</span><CurrencyValues usdt={collectionAvailable.chainUSDT} trx={collectionAvailable.chainTRX} /><small>三个归集钱包链上余额，两个币种独立展示</small></article>
-      <article><span>代付在途锁定</span><CurrencyValues usdt={PAYOUT_LOCKED.usdt} trx={PAYOUT_LOCKED.trx} /><small>已创建但尚未完成的演示代付订单占用</small></article>
-    </section>}
 
     {activeTab !== 'overview' && <section className="panel wr-filter-panel">
       <label><span>综合搜索</span><div><Search size={14} /><input value={draft.keyword} onChange={(event) => setDraft((old) => ({ ...old, keyword: event.target.value }))} onKeyDown={(event) => event.key === 'Enter' && query()} placeholder={activeTab === 'game' ? '用户ID / 用户名 / 游戏 / 钱包地址' : activeTab === 'member' ? '用户ID / 用户名 / 钱包地址' : '钱包编号 / 名称 / 地址'} /></div></label>
@@ -525,10 +576,10 @@ export default function WalletReconciliationPage({ toast }) {
       {activeTab === 'overview'
         ? <OverviewTable rows={categorySummaryRows} loading={loading} onOpen={switchTab} />
         : activeTab === 'game' && !gameDetail
-        ? <GameSummaryTable rows={pagedGameSummaryRows} loading={loading} onDrillDown={(game) => { setGameDetail(game); setPage(1); notify(`已展开 ${game} 的全部用户钱包`) }} />
+        ? <GameSummaryTable rows={pagedGameSummaryRows} totalRows={gameSummaryRows} loading={loading} onDrillDown={(game) => { setGameDetail(game); setPage(1); notify(`已展开 ${game} 的全部用户钱包`) }} />
         : activeTab === 'game'
-          ? <GameWalletTable rows={pagedRows} loading={loading} onCopy={copyAddress} onDetail={setDetail} />
-          : <StandardRowsTable rows={pagedRows} activeTab={activeTab} loading={loading} onCopy={copyAddress} onDetail={setDetail} />}
+          ? <GameWalletTable rows={pagedRows} totalRows={filteredRows} loading={loading} onCopy={copyAddress} onDetail={setDetail} />
+          : <StandardRowsTable rows={pagedRows} totalRows={filteredRows} activeTab={activeTab} loading={loading} onCopy={copyAddress} onDetail={setDetail} />}
       {activeTab !== 'overview' && <WalletPagination total={totalVisibleRows} page={page} pageSize={pageSize} onPage={setPage} onPageSize={changePageSize} />}
       <footer className="wr-table-footer"><span>本页面仅做前端演示，不连接链上节点或资金系统。</span><span>系统不自动给出核对结论，最终结果由财务人员人工确认。</span></footer>
     </section>

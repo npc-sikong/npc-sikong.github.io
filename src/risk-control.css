@@ -195,7 +195,7 @@
 
 .risk-table {
   width: 100%;
-  min-width: 1420px;
+  min-width: 1810px;
   border-collapse: collapse;
   font-size: 12px;
 }
@@ -287,6 +287,41 @@
   color: #43a047;
 }
 
+.risk-currency-stack {
+  display: grid;
+  min-width: 142px;
+  gap: 3px;
+}
+
+.risk-currency-stack > span {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  gap: 6px;
+  color: #606266;
+  font-variant-numeric: tabular-nums;
+}
+
+.risk-currency-stack em {
+  color: #909399;
+  font-size: 10px;
+  font-style: normal;
+}
+
+.risk-currency-stack b {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.risk-currency-stack > span.danger,
+.risk-currency-stack > span.danger em {
+  color: #e54b4b;
+}
+
+.risk-currency-stack.percentage {
+  min-width: 92px;
+}
+
 .risk-usage {
   display: flex;
   align-items: center;
@@ -320,10 +355,34 @@
 .risk-status {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
   height: 25px;
   gap: 4px;
   padding: 0 8px;
   border-radius: 3px;
+  white-space: nowrap;
+}
+
+.risk-status small {
+  color: inherit !important;
+  font-size: 9px !important;
+}
+
+.risk-status.currency-risk-status {
+  min-height: 38px;
+  height: auto;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.currency-risk-status > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .risk-status.triggered {
@@ -415,6 +474,10 @@
   border-radius: 4px;
   background: #fff;
   box-shadow: 0 16px 45px rgba(0, 0, 0, .28);
+}
+
+.five-period-limit-dialog {
+  width: min(1180px, calc(100vw - 40px));
 }
 
 .risk-limit-dialog > header,
@@ -519,6 +582,10 @@
   font-size: 12px;
 }
 
+.risk-period-config-table.multi-currency-config-table {
+  min-width: 1100px;
+}
+
 .risk-period-config-table th,
 .risk-period-config-table td {
   padding: 10px 11px;
@@ -551,7 +618,7 @@
 
 .risk-config-input {
   display: flex;
-  width: 190px;
+  width: 154px;
   height: 32px;
   overflow: hidden;
   border: 1px solid #dcdfe6;
@@ -581,9 +648,11 @@
 
 .risk-config-error {
   display: block;
+  max-width: 154px;
   margin-top: 4px;
   color: #e54b4b !important;
   font-size: 10px;
+  white-space: normal;
 }
 
 .risk-limit-field {

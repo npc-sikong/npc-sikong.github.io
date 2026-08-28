@@ -6,16 +6,24 @@ export const MEMBER_RISK_RULE_PATH = '/risk/member-rule-setting'
 export const MEMBER_RISK_LIST_PATH = '/risk/member-list'
 
 const RISK_BASE_DATE = '2026-08-28'
-const RULE_UPDATED_AT = '2026-08-28 03:45:00'
+const RULE_UPDATED_AT = '2026-08-28 13:26:00'
+
+export const MEMBER_RISK_CURRENCIES = ['CNY', 'TRX', 'USDT']
 
 export const MEMBER_RISK_METRICS = [
-  { key: 'recharge', label: '充值金额', unit: 'CNY', kind: 'money' },
-  { key: 'withdraw', label: '提现金额', unit: 'CNY', kind: 'money' },
-  { key: 'bet', label: '投注金额', unit: 'CNY', kind: 'money' },
+  { key: 'recharge', label: '充值金额', kind: 'money' },
+  { key: 'withdraw', label: '提现金额', kind: 'money' },
+  { key: 'bet', label: '投注金额', kind: 'money' },
   { key: 'winRate', label: '胜率', unit: '%', kind: 'percent' },
-  { key: 'profit', label: '盈利金额', unit: 'CNY', kind: 'money' },
-  { key: 'loss', label: '亏损金额', unit: 'CNY', kind: 'money' },
+  { key: 'profit', label: '盈利金额', kind: 'money' },
+  { key: 'loss', label: '亏损金额', kind: 'money' },
 ]
+
+const MEMBER_CURRENCY_DAILY_FACTORS = {
+  CNY: { recharge: 1, withdraw: 1, bet: 1, payout: 1 },
+  TRX: { recharge: 6.2, withdraw: 5.7, bet: 6.4, payout: 6.1 },
+  USDT: { recharge: 0.14, withdraw: 0.15, bet: 0.13, payout: 0.145 },
+}
 
 const OPERATORS = [
   { key: 'gte', label: '大于等于', symbol: '≥' },
@@ -32,8 +40,8 @@ export const initialMemberRiskRules = [
     logic: 'all',
     enabled: true,
     conditions: [
-      { id: '101-1', metric: 'recharge', operator: 'gte', value: 70000 },
-      { id: '101-2', metric: 'winRate', operator: 'gte', value: 70 },
+      { id: '101-1', metric: 'recharge', currency: 'CNY', operator: 'gte', value: 70000 },
+      { id: '101-2', metric: 'winRate', currency: '', operator: 'gte', value: 70 },
     ],
     updatedAt: RULE_UPDATED_AT,
   },
@@ -44,8 +52,8 @@ export const initialMemberRiskRules = [
     logic: 'all',
     enabled: true,
     conditions: [
-      { id: '102-1', metric: 'withdraw', operator: 'gte', value: 30000 },
-      { id: '102-2', metric: 'profit', operator: 'gte', value: 45000 },
+      { id: '102-1', metric: 'withdraw', currency: 'USDT', operator: 'gte', value: 5000 },
+      { id: '102-2', metric: 'profit', currency: 'USDT', operator: 'gte', value: 10000 },
     ],
     updatedAt: RULE_UPDATED_AT,
   },
@@ -56,7 +64,7 @@ export const initialMemberRiskRules = [
     logic: 'all',
     enabled: true,
     conditions: [
-      { id: '103-1', metric: 'loss', operator: 'gte', value: 150000 },
+      { id: '103-1', metric: 'loss', currency: 'TRX', operator: 'gte', value: 900000 },
     ],
     updatedAt: RULE_UPDATED_AT,
   },
@@ -103,19 +111,38 @@ export function getMemberMetrics(profile, days) {
   const safeDays = Math.max(1, Math.min(30, Number(days) || 1))
   const settledBets = Math.max(0, Number(profile.dailySettledBets || 0) * safeDays)
   const winningBets = Math.max(0, Math.min(settledBets, Number(profile.dailyWinningBets || 0) * safeDays))
-  const net = roundMoney((Number(profile.dailyPayout || 0) - Number(profile.dailyBet || 0)) * safeDays)
+  const currencies = Object.fromEntries(MEMBER_RISK_CURRENCIES.map((currency) => {
+    const factors = MEMBER_CURRENCY_DAILY_FACTORS[currency]
+    const recharge = roundMoney(Number(profile.dailyRecharge || 0) * factors.recharge * safeDays)
+    const withdraw = roundMoney(Number(profile.dailyWithdraw || 0) * factors.withdraw * safeDays)
+    const bet = roundMoney(Number(profile.dailyBet || 0) * factors.bet * safeDays)
+    const payout = roundMoney(Number(profile.dailyPayout || 0) * factors.payout * safeDays)
+    const net = roundMoney(payout - bet)
+    return [currency, {
+      recharge,
+      withdraw,
+      bet,
+      profit: Math.max(0, net),
+      loss: Math.max(0, -net),
+    }]
+  }))
+  const winRate = settledBets ? roundMoney((winningBets / settledBets) * 100) : 0
   return {
-    recharge: roundMoney(profile.dailyRecharge * safeDays),
-    withdraw: roundMoney(profile.dailyWithdraw * safeDays),
-    bet: roundMoney(profile.dailyBet * safeDays),
-    winRate: settledBets ? roundMoney((winningBets / settledBets) * 100) : 0,
-    profit: Math.max(0, net),
-    loss: Math.max(0, -net),
+    ...currencies.CNY,
+    winRate,
+    currencies,
   }
 }
 
+function conditionActualValue(condition, metrics) {
+  const metric = metricDefinition(condition.metric)
+  if (metric.kind === 'percent') return Number(metrics.winRate || 0)
+  const currency = MEMBER_RISK_CURRENCIES.includes(condition.currency) ? condition.currency : 'CNY'
+  return Number(metrics.currencies?.[currency]?.[condition.metric] || 0)
+}
+
 function conditionMatches(condition, metrics) {
-  const actual = Number(metrics[condition.metric] || 0)
+  const actual = conditionActualValue(condition, metrics)
   const target = Number(condition.value || 0)
   if (condition.operator === 'gt') return actual > target
   if (condition.operator === 'lte') return actual <= target
@@ -129,20 +156,30 @@ function ruleMatches(rule, metrics) {
   return rule.logic === 'any' ? results.some(Boolean) : results.every(Boolean)
 }
 
-function metricValueText(metric, value) {
-  return metric.kind === 'percent' ? `${Number(value).toFixed(1)}%` : `${formatMoney(value)} CNY`
+function metricValueText(metric, value, currency = 'CNY') {
+  return metric.kind === 'percent' ? `${Number(value).toFixed(1)}%` : `${formatMoney(value)} ${currency}`
 }
 
 function conditionText(condition) {
   const metric = metricDefinition(condition.metric)
   const operator = operatorDefinition(condition.operator)
-  return `${metric.label} ${operator.symbol} ${metric.kind === 'percent' ? Number(condition.value).toFixed(1) : formatMoney(condition.value)} ${metric.unit}`
+  const unit = metric.kind === 'percent' ? '%' : (condition.currency || 'CNY')
+  const suffix = metric.kind === 'percent' ? '（不涉及币种）' : ''
+  return `${metric.label} ${operator.symbol} ${metric.kind === 'percent' ? Number(condition.value).toFixed(1) : formatMoney(condition.value)} ${unit}${suffix}`
 }
 
 function matchedConditionText(condition, metrics) {
   const metric = metricDefinition(condition.metric)
   const operator = operatorDefinition(condition.operator)
-  return `${metric.label} ${metricValueText(metric, metrics[condition.metric])} ${operator.symbol} ${metricValueText(metric, condition.value)}`
+  const currency = metric.kind === 'money' ? (condition.currency || 'CNY') : ''
+  const suffix = metric.kind === 'percent' ? '（不涉及币种）' : ''
+  return `${metric.label} ${metricValueText(metric, conditionActualValue(condition, metrics), currency)} ${operator.symbol} ${metricValueText(metric, condition.value, currency)}${suffix}`
+}
+
+function matchedRuleCurrencies(rule, metrics) {
+  return [...new Set(rule.conditions
+    .filter((condition) => metricDefinition(condition.metric).kind === 'money' && conditionMatches(condition, metrics))
+    .map((condition) => condition.currency || 'CNY'))]
 }
 
 export function getMemberRiskMatches(rules, mutedAlerts = {}) {
@@ -219,7 +256,7 @@ export function MemberRiskRulePage({ rules, setRules, allocateRuleId, setMutedAl
   return (
     <div className="member-risk-page">
       <section className="member-risk-intro">
-        <div><ShieldAlert size={21} /><div><b>会员风险组合规则</b><p>统计时间可设置为近 1–30 天，充值、提现、投注、胜率、盈利和亏损可以添加一个或多个条件，并选择全部满足或任一满足。</p></div></div>
+        <div><ShieldAlert size={21} /><div><b>会员风险组合规则</b><p>统计时间可设置为近 1–30 天；充值、提现、投注、盈利和亏损按 CNY / TRX / USDT 独立配置，胜率不涉及币种。</p></div></div>
         <button className="btn btn-primary" onClick={() => setEditing({ mode: 'create' })}><Plus size={14} />新增规则</button>
       </section>
 
@@ -265,13 +302,16 @@ function RuleEditorDialog({ rules, editing, onClose, onSave }) {
   const sequence = useRef(1)
   const [form, setForm] = useState(() => source ? {
     ...source,
-    conditions: source.conditions.map((condition) => ({ ...condition })),
+    conditions: source.conditions.map((condition) => ({
+      ...condition,
+      currency: metricDefinition(condition.metric).kind === 'money' ? (condition.currency || 'CNY') : '',
+    })),
   } : {
     name: '',
     days: 7,
     logic: 'all',
     enabled: true,
-    conditions: [{ id: `new-${sequence.current++}`, metric: 'recharge', operator: 'gte', value: 50000 }],
+    conditions: [{ id: `new-${sequence.current++}`, metric: 'recharge', currency: 'CNY', operator: 'gte', value: 50000 }],
   })
   const [errors, setErrors] = useState({})
 
@@ -281,7 +321,7 @@ function RuleEditorDialog({ rules, editing, onClose, onSave }) {
   }
 
   const addCondition = () => {
-    setForm((old) => ({ ...old, conditions: [...old.conditions, { id: `new-${Date.now()}-${sequence.current++}`, metric: 'bet', operator: 'gte', value: 100000 }] }))
+    setForm((old) => ({ ...old, conditions: [...old.conditions, { id: `new-${Date.now()}-${sequence.current++}`, metric: 'bet', currency: 'CNY', operator: 'gte', value: 100000 }] }))
     setErrors((old) => ({ ...old, conditions: '' }))
   }
 
@@ -300,14 +340,23 @@ function RuleEditorDialog({ rules, editing, onClose, onSave }) {
     const invalidConditions = form.conditions.filter((condition) => {
       const value = Number(condition.value)
       const metric = metricDefinition(condition.metric)
-      return String(condition.value).trim() === '' || !Number.isFinite(value) || value < 0 || (metric.kind === 'percent' && value > 100)
+      const invalidCurrency = metric.kind === 'money' && !MEMBER_RISK_CURRENCIES.includes(condition.currency)
+      return invalidCurrency || String(condition.value).trim() === '' || !Number.isFinite(value) || value < 0 || (metric.kind === 'percent' && value > 100)
     })
     if (invalidConditions.length) {
       nextErrors.conditionIds = invalidConditions.map((condition) => condition.id)
-      nextErrors.conditions = `请检查条件 ${invalidConditions.map((condition) => form.conditions.findIndex((item) => item.id === condition.id) + 1).join('、')}：金额必须为非负数，胜率范围为 0% 至 100%`
+      nextErrors.conditions = `请检查条件 ${invalidConditions.map((condition) => form.conditions.findIndex((item) => item.id === condition.id) + 1).join('、')}：金额条件须选择币种且金额非负，胜率范围为 0% 至 100%`
     }
     if (Object.keys(nextErrors).length) { setErrors(nextErrors); return }
-    onSave({ ...form, name: form.name.trim(), days })
+    onSave({
+      ...form,
+      name: form.name.trim(),
+      days,
+      conditions: form.conditions.map((condition) => ({
+        ...condition,
+        currency: metricDefinition(condition.metric).kind === 'money' ? condition.currency : '',
+      })),
+    })
   }
 
   return (
@@ -322,16 +371,24 @@ function RuleEditorDialog({ rules, editing, onClose, onSave }) {
           </section>
 
           <section className="member-condition-builder">
-            <div className="member-condition-head"><div><b>风控条件</b><span>充值 / 提现 / 投注 / 胜率 / 盈利 / 亏损自由组合</span></div><button className="btn btn-primary" onClick={addCondition}><Plus size={14} />添加条件</button></div>
+            <div className="member-condition-head"><div><b>风控条件</b><span>金额条件按 CNY / TRX / USDT 独立判断，胜率不涉及币种</span></div><button className="btn btn-primary" onClick={addCondition}><Plus size={14} />添加条件</button></div>
             <div className="member-condition-list">{form.conditions.map((condition, index) => {
               const metric = metricDefinition(condition.metric)
               return <React.Fragment key={condition.id}>
                 {index > 0 && <div className="member-condition-relation"><span>{form.logic === 'any' ? '或' : '且'}</span></div>}
                 <div className={`member-condition-row ${(errors.conditionIds || []).includes(condition.id) ? 'invalid' : ''}`}>
                   <span className="condition-index">条件 {index + 1}</span>
-                  <select aria-label={`条件${index + 1}指标`} value={condition.metric} onChange={(event) => updateCondition(condition.id, { metric: event.target.value, value: event.target.value === 'winRate' ? 70 : 50000 })}>{MEMBER_RISK_METRICS.map((item) => <option value={item.key} key={item.key}>{item.label}</option>)}</select>
+                  <select aria-label={`条件${index + 1}指标`} value={condition.metric} onChange={(event) => {
+                    const nextMetric = metricDefinition(event.target.value)
+                    updateCondition(condition.id, {
+                      metric: event.target.value,
+                      currency: nextMetric.kind === 'money' ? (condition.currency || 'CNY') : '',
+                      value: nextMetric.kind === 'percent' ? 70 : 50000,
+                    })
+                  }}>{MEMBER_RISK_METRICS.map((item) => <option value={item.key} key={item.key}>{item.label}</option>)}</select>
                   <select aria-label={`条件${index + 1}比较方式`} value={condition.operator} onChange={(event) => updateCondition(condition.id, { operator: event.target.value })}>{OPERATORS.map((item) => <option value={item.key} key={item.key}>{item.label}（{item.symbol}）</option>)}</select>
-                  <div className="member-condition-value"><input aria-label={`条件${index + 1}数值`} type="number" min="0" max={metric.kind === 'percent' ? '100' : undefined} step={metric.kind === 'percent' ? '0.1' : '0.01'} value={condition.value} onChange={(event) => updateCondition(condition.id, { value: event.target.value })} /><span>{metric.unit}</span></div>
+                  <select className="member-condition-currency" aria-label={`条件${index + 1}币种`} value={metric.kind === 'money' ? (condition.currency || 'CNY') : ''} disabled={metric.kind === 'percent'} onChange={(event) => updateCondition(condition.id, { currency: event.target.value })}>{metric.kind === 'percent' && <option value="">不涉及币种</option>}{MEMBER_RISK_CURRENCIES.map((currency) => <option value={currency} key={currency}>{currency}</option>)}</select>
+                  <div className="member-condition-value"><input aria-label={`条件${index + 1}数值`} type="number" min="0" max={metric.kind === 'percent' ? '100' : undefined} step={metric.kind === 'percent' ? '0.1' : '0.01'} value={condition.value} onChange={(event) => updateCondition(condition.id, { value: event.target.value })} /><span>{metric.kind === 'percent' ? '%' : (condition.currency || 'CNY')}</span></div>
                   <button className="condition-remove" aria-label={`删除条件${index + 1}`} onClick={() => removeCondition(condition.id)}><Trash2 size={14} />删除</button>
                 </div>
               </React.Fragment>
@@ -339,7 +396,7 @@ function RuleEditorDialog({ rules, editing, onClose, onSave }) {
             {errors.conditions && <div className="member-condition-error">{errors.conditions}</div>}
           </section>
 
-          <div className="member-rule-tip"><AlertTriangle size={16} /><p><b>仅预警，不拦截</b>规则命中后只会出现在“风控会员列表”中，不会自动冻结会员、拒绝充值提现、限制投注或变更任何资金数据。</p></div>
+          <div className="member-rule-tip"><AlertTriangle size={16} /><p><b>三币种独立，仅预警不拦截</b>每个金额条件只比较所选币种的本币实际值与本币阈值，不折算、不相加；命中后只进入“风控会员列表”，不会自动限制会员业务。</p></div>
         </div>
         <footer><button className="btn btn-default" onClick={onClose}>取消</button><button className="btn btn-primary" onClick={submit}>确定</button></footer>
       </section>
@@ -348,8 +405,8 @@ function RuleEditorDialog({ rules, editing, onClose, onSave }) {
 }
 
 export function RiskMemberListPage({ rules, mutedAlerts, setMutedAlerts, toast }) {
-  const [draft, setDraft] = useState({ keyword: '', ruleId: '全部', status: '全部' })
-  const [applied, setApplied] = useState({ keyword: '', ruleId: '全部', status: '全部' })
+  const [draft, setDraft] = useState({ keyword: '', ruleId: '全部', currency: '全部', status: '全部' })
+  const [applied, setApplied] = useState({ keyword: '', ruleId: '全部', currency: '全部', status: '全部' })
   const [muting, setMuting] = useState(null)
   const matches = useMemo(() => getMemberRiskMatches(rules, mutedAlerts), [rules, mutedAlerts])
   const activeCount = matches.filter((item) => !item.muted).length
@@ -359,6 +416,7 @@ export function RiskMemberListPage({ rules, mutedAlerts, setMutedAlerts, toast }
     const keyword = applied.keyword.trim().toLowerCase()
     if (keyword && !`${item.profile.id} ${item.profile.username} ${item.rule.name}`.toLowerCase().includes(keyword)) return false
     if (applied.ruleId !== '全部' && String(item.rule.id) !== applied.ruleId) return false
+    if (applied.currency !== '全部' && !matchedRuleCurrencies(item.rule, item.metrics).includes(applied.currency)) return false
     if (applied.status === '预警中' && item.muted) return false
     if (applied.status === '不再提醒' && !item.muted) return false
     return true
@@ -370,7 +428,7 @@ export function RiskMemberListPage({ rules, mutedAlerts, setMutedAlerts, toast }
   }
 
   const reset = () => {
-    const empty = { keyword: '', ruleId: '全部', status: '全部' }
+    const empty = { keyword: '', ruleId: '全部', currency: '全部', status: '全部' }
     setDraft(empty)
     setApplied(empty)
     toast('已重置风险会员筛选')
@@ -391,7 +449,7 @@ export function RiskMemberListPage({ rules, mutedAlerts, setMutedAlerts, toast }
     <div className="member-risk-page">
       <section className={`risk-member-banner ${activeCount ? 'warning' : 'safe'}`}>
         <div className="risk-member-banner-icon">{activeCount ? <AlertTriangle size={22} /> : <CheckCircle2 size={22} />}</div>
-        <div><b>{activeCount ? `当前有 ${activeMemberCount} 名会员产生 ${activeCount} 条风险预警` : mutedCount ? `当前没有待提醒记录，另有 ${mutedCount} 条已设为不再提醒` : '当前没有需要提醒的风险会员'}</b><p>由已启用的会员风控规则实时判定；同一会员命中多个规则时分别展示。预警只作提醒，不自动限制业务。</p></div>
+        <div><b>{activeCount ? `当前有 ${activeMemberCount} 名会员产生 ${activeCount} 条风险预警` : mutedCount ? `当前没有待提醒记录，另有 ${mutedCount} 条已设为不再提醒` : '当前没有需要提醒的风险会员'}</b><p>金额条件按 CNY / TRX / USDT 本币值独立判定，不换算、不合计；预警只作提醒，不自动限制业务。</p></div>
         <div className="risk-member-banner-counts"><span className={activeCount ? 'warning' : ''}>待提醒 <b>{activeCount}</b></span><span>不再提醒 <b>{mutedCount}</b></span></div>
       </section>
 
@@ -399,6 +457,7 @@ export function RiskMemberListPage({ rules, mutedAlerts, setMutedAlerts, toast }
         <div className="member-risk-filter-grid member-list-filters">
           <label><span>会员关键词</span><input value={draft.keyword} onChange={(event) => setDraft((old) => ({ ...old, keyword: event.target.value }))} placeholder="会员ID / 用户名 / 规则名称" /></label>
           <label><span>命中规则</span><select value={draft.ruleId} onChange={(event) => setDraft((old) => ({ ...old, ruleId: event.target.value }))}><option>全部</option>{rules.filter((rule) => rule.enabled).map((rule) => <option value={rule.id} key={rule.id}>{rule.name}</option>)}</select></label>
+          <label><span>命中币种</span><select aria-label="命中币种" value={draft.currency} onChange={(event) => setDraft((old) => ({ ...old, currency: event.target.value }))}><option>全部</option>{MEMBER_RISK_CURRENCIES.map((currency) => <option key={currency}>{currency}</option>)}</select></label>
           <label><span>提醒状态</span><select value={draft.status} onChange={(event) => setDraft((old) => ({ ...old, status: event.target.value }))}><option>全部</option><option>预警中</option><option>不再提醒</option></select></label>
           <div className="member-risk-filter-actions"><button className="btn btn-primary" onClick={query}><Search size={14} />查询</button><button className="btn btn-default" onClick={reset}><RotateCcw size={14} />重置</button></div>
         </div>
@@ -408,13 +467,14 @@ export function RiskMemberListPage({ rules, mutedAlerts, setMutedAlerts, toast }
         <div className="member-risk-table-head"><div><Users size={17} /><b>风控会员列表</b><span>按启用规则自动判定</span></div><span>共 <b>{visibleMatches.length}</b> 条</span></div>
         <div className="member-risk-table-scroll">
           <table className="member-risk-table member-alert-table">
-            <thead><tr><th>会员信息</th><th>会员等级</th><th>命中规则</th><th>统计范围</th><th>命中条件与实际值</th><th>触发时间</th><th>提醒状态</th><th>操作</th></tr></thead>
+            <thead><tr><th>会员信息</th><th>会员等级</th><th>命中规则</th><th>统计范围</th><th>命中币种</th><th>命中条件与实际值</th><th>触发时间</th><th>提醒状态</th><th>操作</th></tr></thead>
             <tbody>{visibleMatches.length ? visibleMatches.map((item) => (
               <tr key={item.key} className={item.muted ? 'muted' : 'warning'}>
                 <td><div className="risk-member-cell"><b>{item.profile.username}</b><span>ID：{item.profile.id}</span><small>最后活跃：{item.profile.lastActiveAt}</small></div></td>
                 <td>{item.profile.level}</td>
                 <td><div className="risk-rule-cell"><b>{item.rule.name}</b><small>规则ID：{item.rule.id} · {item.rule.logic === 'any' ? '任一满足' : '全部满足'}</small></div></td>
                 <td><b>近 {item.rule.days} 天</b><small className="block-small">{rangeText(item.rule.days)}</small></td>
+                <td><div className="member-hit-currencies">{matchedRuleCurrencies(item.rule, item.metrics).length ? matchedRuleCurrencies(item.rule, item.metrics).map((currency) => <span key={currency}>{currency}</span>) : <em>不涉及币种</em>}</div></td>
                 <td><div className="matched-condition-list">{item.rule.conditions.map((condition) => {
                   const satisfied = conditionMatches(condition, item.metrics)
                   return <span className={satisfied ? 'condition-matched' : 'condition-unmatched'} key={condition.id}>{matchedConditionText(condition, item.metrics)}<em>{satisfied ? '已满足' : '未满足'}</em></span>
@@ -423,7 +483,7 @@ export function RiskMemberListPage({ rules, mutedAlerts, setMutedAlerts, toast }
                 <td>{item.muted ? <span className="member-alert-status muted"><BellOff size={13} />不再提醒</span> : <span className="member-alert-status warning"><AlertTriangle size={13} />预警中</span>}</td>
                 <td>{item.muted ? <button className="member-restore-button" onClick={() => restoreMember(item)}><CheckCircle2 size={13} />恢复提醒</button> : <button className="member-mute-button" onClick={() => setMuting(item)}><BellOff size={13} />不再提醒</button>}</td>
               </tr>
-            )) : <tr><td colSpan="8"><div className="member-risk-empty">暂无符合条件的风险会员预警</div></td></tr>}</tbody>
+            )) : <tr><td colSpan="9"><div className="member-risk-empty">暂无符合条件的风险会员预警</div></td></tr>}</tbody>
           </table>
         </div>
       </section>

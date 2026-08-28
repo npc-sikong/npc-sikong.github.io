@@ -111,6 +111,44 @@
   font-style: normal;
 }
 
+.wr-balance-summary {
+  display: grid;
+  gap: 10px;
+}
+
+.wr-balance-summary-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 34px;
+  gap: 16px;
+}
+
+.wr-balance-summary-head > div {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+  gap: 10px;
+}
+
+.wr-balance-summary-head b {
+  flex: 0 0 auto;
+  color: #303133;
+  font-size: 14px;
+}
+
+.wr-balance-summary-head span {
+  overflow: hidden;
+  color: #909399;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wr-balance-summary-head button:disabled {
+  cursor: wait;
+}
+
 .wr-overview {
   display: grid;
   grid-template-columns: repeat(4, minmax(190px, 1fr));
@@ -137,19 +175,26 @@
   background: #4a5dff;
 }
 
-.wr-overview article > span {
-  display: block;
-  margin-bottom: 7px;
-  color: #909399;
-  font-size: 12px;
+.wr-balance-card-title {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+  gap: 7px;
+  color: #606266;
 }
 
-.wr-overview article > b {
-  display: block;
-  height: 43px;
-  color: #303133;
-  font-size: 28px;
-  line-height: 38px;
+.wr-balance-card-title > span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  color: #4a5dff;
+  border-radius: 4px;
+  background: #eef1ff;
+}
+
+.wr-balance-card-title > b {
+  font-size: 13px;
 }
 
 .wr-overview article > small {
@@ -174,61 +219,12 @@
   font-size: 18px;
 }
 
-.wr-operational-overview {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(210px, 1fr));
-  gap: 12px;
+.wr-overview.is-refreshing article {
+  opacity: .58;
 }
 
-.wr-operational-overview article {
-  min-height: 105px;
-  padding: 13px 15px;
-  border: 1px solid #e4e7ed;
-  border-radius: 4px;
-  background: #fff;
-}
-
-.wr-operational-overview article > span {
-  display: block;
-  margin-bottom: 8px;
-  color: #606266;
-  font-size: 12px;
-  font-weight: 600;
-}
-
-.wr-operational-overview article > b {
-  display: inline-block;
-  margin-right: 12px;
-  color: #4a5dff;
-  font-size: 23px;
-}
-
-.wr-operational-overview article > strong {
-  color: #606266;
-  font-size: 13px;
-}
-
-.wr-operational-overview article > small {
-  display: block;
-  margin-top: 7px;
-  color: #a8abb2;
-  font-size: 10px;
-}
-
-.wr-operational-overview .wr-currency-values {
-  flex-direction: row;
-  gap: 14px;
-}
-
-.wr-operational-overview .wr-currency-values span {
-  display: grid;
-  min-width: 0;
-  justify-content: start;
-  gap: 1px;
-}
-
-.wr-operational-overview .wr-currency-values b {
-  font-size: 15px;
+.wr-pending-overview article {
+  grid-column: 1;
 }
 
 .wr-filter-panel {
@@ -452,6 +448,37 @@
 
 .wr-table tbody tr:hover td:last-child {
   background: #f7f9ff;
+}
+
+.wr-table tfoot td {
+  height: 58px;
+  color: #303133;
+  border-top: 1px solid #cbd4ff;
+  border-bottom: 0;
+  background: #f2f5ff;
+  font-weight: 600;
+}
+
+.wr-table tfoot td:last-child {
+  background: #f2f5ff;
+}
+
+.wr-total-label {
+  display: flex;
+  flex-direction: column;
+  min-width: 138px;
+  gap: 3px;
+}
+
+.wr-total-label b {
+  color: #303f9f;
+  font-size: 13px;
+}
+
+.wr-total-label span {
+  color: #7d86a5;
+  font-size: 10px;
+  font-weight: 400;
 }
 
 .wr-standard-table th:nth-child(4),
@@ -888,7 +915,6 @@
 
 @media (max-width: 1100px) {
   .wr-overview { grid-template-columns: repeat(2, minmax(190px, 1fr)); }
-  .wr-operational-overview { grid-template-columns: repeat(2, minmax(210px, 1fr)); }
   .wr-wallet-tabs { overflow-x: auto; }
   .wr-wallet-tabs button { flex: 0 0 164px; }
   .wr-sync-info { display: none; }
@@ -897,8 +923,10 @@
 @media (max-width: 760px) {
   .wr-intro { align-items: flex-start; flex-wrap: wrap; }
   .wr-intro > div:nth-child(2) { min-width: calc(100% - 60px); }
+  .wr-balance-summary-head { align-items: flex-start; }
+  .wr-balance-summary-head > div { align-items: flex-start; flex-direction: column; gap: 2px; }
+  .wr-balance-summary-head span { white-space: normal; }
   .wr-overview { grid-template-columns: 1fr; }
-  .wr-operational-overview { grid-template-columns: 1fr; }
   .wr-filter-panel { align-items: stretch; }
   .wr-filter-panel label > div { width: 100%; }
   .wr-filter-panel label { width: 100%; }

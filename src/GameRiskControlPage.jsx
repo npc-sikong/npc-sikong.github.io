@@ -4,6 +4,7 @@ import { MemberRiskConfirmDialog } from './MemberRiskPages.jsx'
 
 export const GAME_RISK_PATH = '/risk/game-profit-loss'
 export const DEFAULT_RISK_BASE_DATE = '2026-08-27'
+export const RISK_CURRENCIES = ['CNY', 'TRX', 'USDT']
 
 export const RISK_PERIODS = [
   { key: 'today', label: '今日', days: 1, betFactor: 1, profitFactor: 1, limitFactor: 1 },
@@ -14,20 +15,20 @@ export const RISK_PERIODS = [
 ]
 
 export const initialGameRiskRows = [
-  { id: 1, name: '1分彩单双', code: 'hash_1fcds', type: '哈希游戏', source: '自营', baseBet: 780000, baseProfit: -132000, warningLimit: 100000 },
-  { id: 2, name: '尾数单双', code: 'hash_wsds', type: '哈希游戏', source: '自营', baseBet: 650000, baseProfit: -71000, warningLimit: 60000 },
-  { id: 3, name: '5分彩单双', code: 'hash_5fcds', type: '哈希游戏', source: '自营', baseBet: 492000, baseProfit: 45000, warningLimit: 80000 },
-  { id: 4, name: '3分彩单双', code: 'hash_3fcds', type: '哈希游戏', source: '自营', baseBet: 438000, baseProfit: -21000, warningLimit: 50000 },
-  { id: 5, name: '尾数大小', code: 'hash_wsdx', type: '哈希游戏', source: '自营', baseBet: 386000, baseProfit: 78000, warningLimit: 70000 },
-  { id: 6, name: '30秒哈希', code: 'hash_30shash', type: '哈希游戏', source: '自营', baseBet: 355000, baseProfit: -38000, warningLimit: 80000 },
-  { id: 7, name: '五张牛牛', code: 'hash_wznn', type: '哈希游戏', source: '自营', baseBet: 318000, baseProfit: 15000, warningLimit: 60000 },
-  { id: 8, name: '牛牛', code: 'hash_niuniu', type: '哈希游戏', source: '自营', baseBet: 297000, baseProfit: -44000, warningLimit: 90000 },
-  { id: 9, name: '哈希一分彩', code: 'hxyfc', type: '区块彩票', source: '自营', baseBet: 826000, baseProfit: -76000, warningLimit: 120000 },
-  { id: 10, name: '哈希三分彩', code: 'hxsfc', type: '区块彩票', source: '自营', baseBet: 692000, baseProfit: 62000, warningLimit: 100000 },
-  { id: 11, name: 'Fortune Tiger', code: 'pg_ftiger', type: '电子游戏', source: 'PG', baseBet: 920000, baseProfit: -29000, warningLimit: 100000 },
-  { id: 12, name: 'God of War', code: 'cq9_gow', type: '电子游戏', source: 'CQ9', baseBet: 758000, baseProfit: 84000, warningLimit: 120000 },
-  { id: 13, name: '经典百家乐', code: 'evo_baccarat', type: '真人游戏', source: 'EVO', baseBet: 1180000, baseProfit: -52000, warningLimit: 100000 },
-  { id: 14, name: '足球早盘', code: 'saba_soccer', type: '体育游戏', source: 'SABA', baseBet: 1380000, baseProfit: 96000, warningLimit: 150000 },
+  { id: 1, name: '1分彩单双', code: 'hash_1fcds', type: '哈希游戏', source: '自营', baseBet: 780000, baseProfitLoss: { CNY: -132000, TRX: -18800, USDT: -2380 }, baseWarningLimits: { CNY: 100000, TRX: 13500, USDT: 1900 } },
+  { id: 2, name: '尾数单双', code: 'hash_wsds', type: '哈希游戏', source: '自营', baseBet: 650000, baseProfitLoss: { CNY: -71000, TRX: -9800, USDT: -1320 }, baseWarningLimits: { CNY: 60000, TRX: 8000, USDT: 1100 } },
+  { id: 3, name: '5分彩单双', code: 'hash_5fcds', type: '哈希游戏', source: '自营', baseBet: 492000, baseProfitLoss: { CNY: 45000, TRX: 6200, USDT: 880 }, baseWarningLimits: { CNY: 80000, TRX: 11000, USDT: 1600 } },
+  { id: 4, name: '3分彩单双', code: 'hash_3fcds', type: '哈希游戏', source: '自营', baseBet: 438000, baseProfitLoss: { CNY: -21000, TRX: -3600, USDT: -520 }, baseWarningLimits: { CNY: 50000, TRX: 7200, USDT: 980 } },
+  { id: 5, name: '尾数大小', code: 'hash_wsdx', type: '哈希游戏', source: '自营', baseBet: 386000, baseProfitLoss: { CNY: 78000, TRX: 10500, USDT: 1520 }, baseWarningLimits: { CNY: 70000, TRX: 9800, USDT: 1350 } },
+  { id: 6, name: '30秒哈希', code: 'hash_30shash', type: '哈希游戏', source: '自营', baseBet: 355000, baseProfitLoss: { CNY: -38000, TRX: -5200, USDT: -780 }, baseWarningLimits: { CNY: 80000, TRX: 11200, USDT: 1450 } },
+  { id: 7, name: '五张牛牛', code: 'hash_wznn', type: '哈希游戏', source: '自营', baseBet: 318000, baseProfitLoss: { CNY: 15000, TRX: 2100, USDT: 310 }, baseWarningLimits: { CNY: 60000, TRX: 8500, USDT: 1200 } },
+  { id: 8, name: '牛牛', code: 'hash_niuniu', type: '哈希游戏', source: '自营', baseBet: 297000, baseProfitLoss: { CNY: -44000, TRX: -6100, USDT: -920 }, baseWarningLimits: { CNY: 90000, TRX: 12500, USDT: 1650 } },
+  { id: 9, name: '哈希一分彩', code: 'hxyfc', type: '区块彩票', source: '自营', baseBet: 826000, baseProfitLoss: { CNY: -76000, TRX: -10300, USDT: -1480 }, baseWarningLimits: { CNY: 120000, TRX: 16800, USDT: 2300 } },
+  { id: 10, name: '哈希三分彩', code: 'hxsfc', type: '区块彩票', source: '自营', baseBet: 692000, baseProfitLoss: { CNY: 62000, TRX: 8700, USDT: 1260 }, baseWarningLimits: { CNY: 100000, TRX: 14000, USDT: 1950 } },
+  { id: 11, name: 'Fortune Tiger', code: 'pg_ftiger', type: '电子游戏', source: 'PG', baseBet: 920000, baseProfitLoss: { CNY: -29000, TRX: -4100, USDT: -650 }, baseWarningLimits: { CNY: 100000, TRX: 14000, USDT: 1950 } },
+  { id: 12, name: 'God of War', code: 'cq9_gow', type: '电子游戏', source: 'CQ9', baseBet: 758000, baseProfitLoss: { CNY: 84000, TRX: 11600, USDT: 1680 }, baseWarningLimits: { CNY: 120000, TRX: 17000, USDT: 2350 } },
+  { id: 13, name: '经典百家乐', code: 'evo_baccarat', type: '真人游戏', source: 'EVO', baseBet: 1180000, baseProfitLoss: { CNY: -52000, TRX: -7200, USDT: -980 }, baseWarningLimits: { CNY: 100000, TRX: 14500, USDT: 2050 } },
+  { id: 14, name: '足球早盘', code: 'saba_soccer', type: '体育游戏', source: 'SABA', baseBet: 1380000, baseProfitLoss: { CNY: 96000, TRX: 13200, USDT: 1920 }, baseWarningLimits: { CNY: 150000, TRX: 21000, USDT: 2900 } },
 ]
 
 function roundMoney(value) {
@@ -48,27 +49,54 @@ function periodDateText(baseDate, period) {
   return period.days === 1 ? baseDate : `${shiftDate(baseDate, -(period.days - 1))} 至 ${baseDate}`
 }
 
-export function getWarningLimit(game, period) {
-  return roundMoney(game.warningLimits?.[period.key] ?? game.warningLimit * period.limitFactor)
+export function getWarningLimit(game, period, currency = 'CNY') {
+  const savedLimit = game.warningLimits?.[currency]?.[period.key]
+  const legacyCnyLimit = currency === 'CNY' ? game.warningLimits?.[period.key] : undefined
+  const baseLimit = game.baseWarningLimits?.[currency] ?? (currency === 'CNY' ? game.warningLimit : 0)
+  return roundMoney(savedLimit ?? legacyCnyLimit ?? baseLimit * period.limitFactor)
 }
 
-export function getRiskMetrics(game, period) {
-  const betAmount = roundMoney(game.baseBet * period.betFactor)
-  const profitLoss = roundMoney(game.baseProfit * period.profitFactor)
-  const payoutAmount = roundMoney(betAmount - profitLoss)
+export function getRiskMetrics(game, period, currency = 'CNY') {
+  const baseProfitLoss = game.baseProfitLoss?.[currency] ?? (currency === 'CNY' ? game.baseProfit : 0)
+  const profitLoss = roundMoney(baseProfitLoss * period.profitFactor)
   const lossAmount = Math.max(0, -profitLoss)
-  const warningLimit = getWarningLimit(game, period)
+  const warningLimit = getWarningLimit(game, period, currency)
   const riskValue = lossAmount > 0 ? lossAmount / warningLimit * 100 : 0
   const triggered = warningLimit > 0 && lossAmount >= warningLimit
-  return { betAmount, payoutAmount, profitLoss, lossAmount, warningLimit, riskValue, triggered }
+  return { profitLoss, lossAmount, warningLimit, riskValue, triggered }
 }
 
 export function getGamePeriodRows(game, baseDate = DEFAULT_RISK_BASE_DATE) {
-  return RISK_PERIODS.map((period) => ({ ...period, dateText: periodDateText(baseDate, period), ...getRiskMetrics(game, period) }))
+  return RISK_PERIODS.map((period) => {
+    const currencies = Object.fromEntries(RISK_CURRENCIES.map((currency) => [currency, getRiskMetrics(game, period, currency)]))
+    const betAmount = roundMoney(game.baseBet * period.betFactor)
+    const payoutAmount = roundMoney(betAmount - currencies.CNY.profitLoss)
+    const triggeredCurrencies = RISK_CURRENCIES.filter((currency) => currencies[currency].triggered)
+    return { ...period, dateText: periodDateText(baseDate, period), betAmount, payoutAmount, currencies, triggeredCurrencies, triggered: triggeredCurrencies.length > 0 }
+  })
 }
 
 export function getRiskAlertCount(games) {
-  return new Set(games.filter((game) => !game.reminderMuted && RISK_PERIODS.some((period) => getRiskMetrics(game, period).triggered)).map((game) => game.id)).size
+  return new Set(games.filter((game) => !game.reminderMuted && RISK_PERIODS.some((period) => RISK_CURRENCIES.some((currency) => getRiskMetrics(game, period, currency).triggered))).map((game) => game.id)).size
+}
+
+function RiskCurrencyStack({ metrics, valueKey, percent = false }) {
+  return (
+    <div className={`risk-currency-stack ${percent ? 'percentage' : ''}`}>
+      {RISK_CURRENCIES.map((currency) => {
+        const metric = metrics[currency]
+        const value = percent ? `${Number(metric[valueKey] || 0).toFixed(1)}%` : formatMoney(metric[valueKey])
+        return <span className={metric.triggered ? 'danger' : ''} key={currency}><em>{currency}</em><b>{value}</b></span>
+      })}
+    </div>
+  )
+}
+
+function RiskPeriodStatus({ metrics }) {
+  const triggeredCurrencies = RISK_CURRENCIES.filter((currency) => metrics[currency].triggered)
+  return triggeredCurrencies.length
+    ? <span className="risk-status triggered currency-risk-status"><span><AlertTriangle size={13} />已触发</span><small>{triggeredCurrencies.join(' / ')}</small></span>
+    : <span className="risk-status normal"><CheckCircle2 size={13} />正常</span>
 }
 
 export default function GameRiskControlPage({ games, setGames, toast }) {
@@ -131,7 +159,7 @@ export default function GameRiskControlPage({ games, setGames, toast }) {
   const saveLimits = (gameId, warningLimits) => {
     setGames((items) => items.map((game) => game.id === gameId ? { ...game, warningLimits } : game))
     setEditing(null)
-    toast('五个周期的亏损预警额度已保存，预警数量已重新计算')
+    toast('五个周期的 CNY、TRX、USDT 亏损预警额度已保存，预警数量已重新计算')
   }
 
   const muteReminder = () => {
@@ -166,10 +194,10 @@ export default function GameRiskControlPage({ games, setGames, toast }) {
         <div className="risk-table-head"><div><ShieldAlert size={17} /><b>游戏盈亏监控</b><span>每个游戏 5 排周期记录</span></div><span>共 <b>{visibleRows.length}</b> 个游戏 / <b>{visibleRows.length * 5}</b> 条周期记录</span></div>
         <div className="risk-table-scroll">
           <table className="risk-table five-period-table">
-            <thead><tr><th>ID</th><th>游戏信息</th><th>游戏类型 / 来源</th><th>统计周期</th><th>有效投注</th><th>派彩金额</th><th>平台盈亏</th><th>亏损预警额度</th><th>风控盈亏值</th><th>预警状态</th><th>操作</th></tr></thead>
+            <thead><tr><th>ID</th><th>游戏信息</th><th>游戏类型 / 来源</th><th>统计周期</th><th>有效投注（CNY）</th><th>派彩金额（CNY）</th><th>CNY 平台盈亏</th><th>TRX 平台盈亏</th><th>USDT 平台盈亏</th><th>亏损预警额度</th><th>风控盈亏值</th><th>预警状态</th><th>操作</th></tr></thead>
             <tbody>
-              {loading ? <tr><td colSpan="11"><div className="risk-loading"><Gauge className="spin" size={22} />正在重新计算五个周期的盈亏与预警...</div></td></tr>
-                : visibleRows.length === 0 ? <tr><td colSpan="11"><div className="risk-empty">暂无符合条件的游戏</div></td></tr>
+              {loading ? <tr><td colSpan="13"><div className="risk-loading"><Gauge className="spin" size={22} />正在重新计算五个周期与三个币种的盈亏与预警...</div></td></tr>
+                : visibleRows.length === 0 ? <tr><td colSpan="13"><div className="risk-empty">暂无符合条件的游戏</div></td></tr>
                   : visibleRows.map((game) => game.periods.map((period, periodIndex) => (
                     <tr key={`${game.id}-${period.key}`} className={`${period.triggered ? 'triggered' : ''} ${periodIndex === 0 ? 'game-start' : ''}`}>
                       {periodIndex === 0 && <td rowSpan="5" className="risk-game-fixed">{game.id}</td>}
@@ -178,10 +206,13 @@ export default function GameRiskControlPage({ games, setGames, toast }) {
                       <td><div className="risk-period-cell"><b>{period.label}</b><small>{period.dateText}</small></div></td>
                       <td>{formatMoney(period.betAmount)} <small>CNY</small></td>
                       <td>{formatMoney(period.payoutAmount)} <small>CNY</small></td>
-                      <td><span className={`risk-money ${period.profitLoss < 0 ? 'loss' : 'profit'}`}>{period.profitLoss > 0 ? '+' : ''}{formatMoney(period.profitLoss)} CNY</span></td>
-                      <td>{formatMoney(period.warningLimit)} <small>CNY</small></td>
-                      <td><div className={`risk-usage ${period.triggered ? 'danger' : ''}`}><div><i style={{ width: `${Math.min(100, period.riskValue)}%` }} /></div><span>{period.riskValue.toFixed(1)}%</span></div></td>
-                      <td>{period.triggered ? <span className="risk-status triggered"><AlertTriangle size={13} />已触发</span> : <span className="risk-status normal"><CheckCircle2 size={13} />正常</span>}</td>
+                      {RISK_CURRENCIES.map((currency) => {
+                        const profitLoss = period.currencies[currency].profitLoss
+                        return <td key={currency}><span className={`risk-money ${profitLoss < 0 ? 'loss' : 'profit'}`}>{profitLoss > 0 ? '+' : ''}{formatMoney(profitLoss)} {currency}</span></td>
+                      })}
+                      <td><RiskCurrencyStack metrics={period.currencies} valueKey="warningLimit" /></td>
+                      <td><RiskCurrencyStack metrics={period.currencies} valueKey="riskValue" percent /></td>
+                      <td><RiskPeriodStatus metrics={period.currencies} /></td>
                       {periodIndex === 0 && <td rowSpan="5" className="risk-game-fixed"><div className="risk-game-actions"><button className="risk-edit-button" onClick={() => setEditing(game)}><Pencil size={13} />设置预警</button>{game.triggered && (game.reminderMuted ? <button className="risk-restore-button" onClick={() => restoreReminder(game)}><BellRing size={13} />恢复提醒</button> : <button className="risk-mute-button" onClick={() => setMuting(game)}><BellOff size={13} />不再提醒</button>)}</div></td>}
                     </tr>
                   )))}
@@ -197,16 +228,24 @@ export default function GameRiskControlPage({ games, setGames, toast }) {
 }
 
 function RiskLimitDialog({ game, baseDate, onClose, onSave }) {
-  const [values, setValues] = useState(() => Object.fromEntries(RISK_PERIODS.map((period) => [period.key, String(getWarningLimit(game, period))])))
+  const [values, setValues] = useState(() => Object.fromEntries(RISK_CURRENCIES.map((currency) => [currency, Object.fromEntries(RISK_PERIODS.map((period) => [period.key, String(getWarningLimit(game, period, currency))]))])))
   const [errors, setErrors] = useState({})
   const rows = getGamePeriodRows(game, baseDate)
+  const updateValue = (currency, periodKey, value) => {
+    const errorKey = `${currency}-${periodKey}`
+    setValues((old) => ({ ...old, [currency]: { ...old[currency], [periodKey]: value } }))
+    setErrors((old) => ({ ...old, [errorKey]: '' }))
+  }
   const submit = () => {
     const nextErrors = {}
-    const limits = {}
-    RISK_PERIODS.forEach((period) => {
-      const amount = Number(values[period.key])
-      if (!Number.isFinite(amount) || amount <= 0) nextErrors[period.key] = `请输入${period.label}大于 0 的额度`
-      else limits[period.key] = roundMoney(amount)
+    const limits = Object.fromEntries(RISK_CURRENCIES.map((currency) => [currency, {}]))
+    RISK_CURRENCIES.forEach((currency) => {
+      RISK_PERIODS.forEach((period) => {
+        const errorKey = `${currency}-${period.key}`
+        const amount = Number(values[currency][period.key])
+        if (String(values[currency][period.key]).trim() === '' || !Number.isFinite(amount) || amount <= 0) nextErrors[errorKey] = `请输入大于 0 的${currency}额度`
+        else limits[currency][period.key] = roundMoney(amount)
+      })
     })
     if (Object.keys(nextErrors).length) { setErrors(nextErrors); return }
     onSave(game.id, limits)
@@ -218,15 +257,20 @@ function RiskLimitDialog({ game, baseDate, onClose, onSave }) {
         <div className="risk-limit-body">
           <div className="risk-limit-game"><div><span>游戏编码</span><b>{game.code}</b></div><div><span>统计基准日</span><b>{baseDate}</b></div></div>
           <div className="risk-period-config">
-            <div className="risk-period-config-head"><b>五周期亏损预警额度</b><span>每个周期独立配置</span></div>
-            <div className="risk-period-config-scroll"><table className="risk-period-config-table"><thead><tr><th>统计周期</th><th>当前亏损</th><th>亏损预警额度</th><th>风控盈亏值</th><th>状态</th></tr></thead><tbody>{rows.map((row) => {
-              const limit = Number(values[row.key]) || 0
-              const riskValue = row.lossAmount > 0 && limit > 0 ? row.lossAmount / limit * 100 : 0
-              const triggered = limit > 0 && row.lossAmount >= limit
-              return <tr key={row.key}><td><b>{row.label}</b><small>{row.dateText}</small></td><td>{formatMoney(row.lossAmount)} CNY</td><td><div className="risk-config-input"><input aria-label={`${row.label}亏损预警额度`} type="number" min="0" step="0.01" value={values[row.key]} onChange={(event) => { setValues((old) => ({ ...old, [row.key]: event.target.value })); setErrors((old) => ({ ...old, [row.key]: '' })) }} /><span>CNY</span></div>{errors[row.key] && <small className="risk-config-error">{errors[row.key]}</small>}</td><td>{riskValue.toFixed(1)}%</td><td>{triggered ? <span className="risk-status triggered">已触发</span> : <span className="risk-status normal">正常</span>}</td></tr>
+            <div className="risk-period-config-head"><b>五周期三币种亏损预警额度</b><span>CNY、TRX、USDT 分别配置、分别判定</span></div>
+            <div className="risk-period-config-scroll"><table className="risk-period-config-table multi-currency-config-table"><thead><tr><th>统计周期</th><th>当前亏损</th>{RISK_CURRENCIES.map((currency) => <th key={currency}>{currency} 预警额度</th>)}<th>风控盈亏值</th><th>状态</th></tr></thead><tbody>{rows.map((row) => {
+              const draftMetrics = Object.fromEntries(RISK_CURRENCIES.map((currency) => {
+                const limit = Number(values[currency][row.key]) || 0
+                const lossAmount = row.currencies[currency].lossAmount
+                return [currency, { ...row.currencies[currency], warningLimit: limit, riskValue: lossAmount > 0 && limit > 0 ? lossAmount / limit * 100 : 0, triggered: limit > 0 && lossAmount >= limit }]
+              }))
+              return <tr key={row.key}><td><b>{row.label}</b><small>{row.dateText}</small></td><td><RiskCurrencyStack metrics={row.currencies} valueKey="lossAmount" /></td>{RISK_CURRENCIES.map((currency) => {
+                const errorKey = `${currency}-${row.key}`
+                return <td key={currency}><div className="risk-config-input"><input aria-label={`${row.label}${currency}亏损预警额度`} type="number" min="0" step="0.01" value={values[currency][row.key]} onChange={(event) => updateValue(currency, row.key, event.target.value)} /><span>{currency}</span></div>{errors[errorKey] && <small className="risk-config-error">{errors[errorKey]}</small>}</td>
+              })}<td><RiskCurrencyStack metrics={draftMetrics} valueKey="riskValue" percent /></td><td><RiskPeriodStatus metrics={draftMetrics} /></td></tr>
             })}</tbody></table></div>
           </div>
-          <div className="risk-limit-tip"><AlertTriangle size={16} /><p><b>触发与计数规则</b>五个周期分别比较亏损金额与对应预警额度；任一周期达到或超过额度，该游戏即触发预警。一个游戏即使多个周期同时触发，侧栏红圈仍只计 1 个。</p></div>
+          <div className="risk-limit-tip"><AlertTriangle size={16} /><p><b>触发与计数规则</b>CNY、TRX、USDT 分别比较本币亏损与本币额度，不折算、不合并；任一周期的任一币种达到或超过额度，该游戏即触发预警。同一游戏即使多个周期或币种同时触发，侧栏红圈仍只计 1 个。</p></div>
         </div>
         <footer><button className="btn btn-default" onClick={onClose}>取消</button><button className="btn btn-primary" onClick={submit}>确定</button></footer>
       </section>

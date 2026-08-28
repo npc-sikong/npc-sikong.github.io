@@ -58,6 +58,10 @@
   gap: 14px;
 }
 
+.member-list-filters {
+  grid-template-columns: 1.35fr 1fr .65fr .8fr auto;
+}
+
 .member-risk-filter-grid label > span {
   display: block;
   margin-bottom: 6px;
@@ -129,6 +133,10 @@
   min-width: 1420px;
   border-collapse: collapse;
   font-size: 12px;
+}
+
+.member-alert-table {
+  min-width: 1540px;
 }
 
 .member-risk-table th,
@@ -211,6 +219,31 @@
   border-left: 1px solid currentColor;
   font-size: 10px;
   font-style: normal;
+}
+
+.member-hit-currencies {
+  display: flex;
+  min-width: 82px;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.member-hit-currencies span {
+  display: inline-flex;
+  height: 24px;
+  align-items: center;
+  padding: 0 7px;
+  color: #4a5dff;
+  border: 1px solid #d7dcff;
+  border-radius: 3px;
+  background: #f2f4ff;
+  font-weight: 600;
+}
+
+.member-hit-currencies em {
+  color: #909399;
+  font-style: normal;
+  white-space: nowrap;
 }
 
 .risk-count-value {
@@ -307,7 +340,7 @@
 
 .member-rule-dialog {
   display: flex;
-  width: min(980px, calc(100vw - 40px));
+  width: min(1080px, calc(100vw - 40px));
   max-height: min(850px, calc(100vh - 40px));
   flex-direction: column;
   overflow: hidden;
@@ -487,9 +520,15 @@
 
 .member-condition-row {
   display: grid;
-  grid-template-columns: 70px minmax(120px, .9fr) minmax(140px, 1fr) minmax(180px, 1.1fr) auto;
+  grid-template-columns: 70px minmax(115px, .9fr) minmax(135px, 1fr) 108px minmax(175px, 1.1fr) auto;
   align-items: center;
   gap: 10px;
+}
+
+.member-condition-currency:disabled {
+  color: #a8abb2;
+  background: #f5f7fa;
+  cursor: not-allowed;
 }
 
 .member-condition-row.invalid {
