@@ -1732,10 +1732,231 @@
   font-size: 8px;
 }
 
+.sfa-password-recovery-page .sfa-content {
+  overflow-x: hidden;
+}
+
+.sfa-password-recovery-account,
+.sfa-password-recovery-card,
+.sfa-recovery-proof-card {
+  min-width: 0;
+}
+
+.sfa-password-recovery-latest {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 10px 11px;
+  border: 1px solid #cfddf8;
+  border-radius: 10px;
+  color: #42526a;
+  background: #f4f7fd;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sfa-password-recovery-latest > span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.sfa-password-recovery-latest small { color: #8490a5; font-size: 9px; }
+.sfa-password-recovery-latest b { overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.sfa-password-recovery-latest strong { flex: 0 0 auto; color: #2864f0; font-size: 10px; }
+
+.sfa-password-recovery-card .sfa-section-title,
+.sfa-recovery-proof-card .sfa-section-title {
+  padding: 0;
+  font-size: 14px;
+}
+
+.sfa-password-recovery-verified {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 14px;
+  padding: 11px 12px;
+  border-radius: 11px;
+  color: #11845a;
+  background: #eaf9f3;
+}
+
+.sfa-password-recovery-verified > span {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.sfa-password-recovery-verified small {
+  color: #638375;
+  font-size: 10px;
+}
+
+.sfa-recovery-proof-list {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.sfa-recovery-upload-field {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  margin-top: 13px;
+  padding: 10px;
+  border: 1px dashed #b8c8e3;
+  border-radius: 12px;
+  background: #f7faff;
+}
+
+.sfa-recovery-upload-field > div {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+}
+
+.sfa-recovery-upload-field > div small {
+  margin-top: 2px;
+  color: #7f8ca4;
+  font-size: 9px;
+}
+
+.sfa-recovery-upload-field > label {
+  display: inline-flex;
+  min-height: 38px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 11px;
+  border-radius: 10px;
+  color: #2864f0;
+  background: #eaf1ff;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sfa-recovery-upload-field > label input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+.sfa-recovery-upload-field figure {
+  position: relative;
+  display: grid;
+  width: 76px;
+  min-width: 0;
+  flex: 0 0 76px;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid #dfe6f1;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.sfa-recovery-upload-field figure img {
+  display: block;
+  width: 100%;
+  height: 58px;
+  object-fit: cover;
+}
+
+.sfa-recovery-upload-field figcaption {
+  overflow: hidden;
+  padding: 3px 5px;
+  color: #6f7d92;
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sfa-recovery-upload-field figure button {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(25, 36, 58, .8);
+  cursor: pointer;
+}
+
+.sfa-password-recovery-result {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px;
+  text-align: center;
+}
+
+.sfa-password-recovery-result > span {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  margin-bottom: 10px;
+  place-items: center;
+  border-radius: 20px;
+  color: #2864f0;
+  background: #edf3ff;
+}
+
+.sfa-password-recovery-result h2,
+.sfa-password-recovery-result p {
+  margin: 3px 0;
+}
+
+.sfa-password-recovery-result p {
+  color: #6f7d92;
+}
+
+.sfa-password-recovery-result > div {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  padding: 10px 11px;
+  border-radius: 10px;
+  background: #f6f8fc;
+  text-align: left;
+}
+
+.sfa-password-recovery-result > div b {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.sfa-password-recovery-result > div strong {
+  flex: 0 0 auto;
+  color: #b86c04;
+}
+
 @media (max-width: 360px) {
   .sfa-content { padding-right: 9px; padding-left: 9px; }
   .sfa-two-columns { grid-template-columns: 1fr; }
   .sfa-filter-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .sfa-summary-grid { grid-template-columns: 1fr; }
   .sfa-currency-card { min-height: 78px; }
+  .sfa-recovery-upload-field { align-items: stretch; flex-direction: column; }
+  .sfa-recovery-upload-field > label { justify-content: center; }
+  .sfa-recovery-upload-field figure { width: 100%; }
+  .sfa-recovery-upload-field figure img { height: 96px; }
 }

@@ -14,11 +14,52 @@ export const initialSecurityProfile = {
 
 export const initialSecurityRecoveryRequests = [
   {
+    id: 'PR202609030001',
+    requestNo: 'PR202609030001',
+    memberId: '407',
+    username: 'demo407',
+    sourcePage: '登录页 · 找回密码',
+    recoveryType: 'login-password',
+    recoveryTypeLabel: '登录密码找回',
+    method: 'transaction-proof',
+    methodLabel: '充值及提现资料',
+    condition: '最近充值截图与充值钱包地址、最近提现截图与提现钱包地址两组材料必须同时核对一致。',
+    reply: '已同时提交最近充值与提现材料，申请修改登录密码。',
+    passwordSubmitted: true,
+    recharge: {
+      walletAddress: 'TQ8DemoRechargeWallet407K6L2',
+      reference: '最近成功充值：100.00 USDT · 2026-09-01 18:26',
+      screenshots: [{
+        name: '最近充值截图-演示.png',
+        type: 'image/png',
+        size: 126640,
+        dataUrl: evidencePreview('最近充值凭证', ['币种：USDT', '实际到账：100.00', '时间：2026-09-01 18:26']),
+      }],
+    },
+    withdrawal: {
+      walletAddress: 'TV6DemoWithdrawWallet407P3N8',
+      reference: '最近成功提现：60.00 USDT · 2026-09-02 20:18',
+      screenshots: [{
+        name: '最近提现截图-演示.png',
+        type: 'image/png',
+        size: 118220,
+        dataUrl: evidencePreview('最近提现凭证', ['币种：USDT', '实际到账：60.00', '时间：2026-09-02 20:18'], '#16a34a'),
+      }],
+    },
+    status: '待审核',
+    submittedAt: '2026-09-03 03:58:20',
+    reviewer: '',
+    reviewedAt: '',
+    rejectReason: '',
+  },
+  {
     id: 'SR202608280003',
     requestNo: 'SR202608280003',
     memberId: '288',
     username: 'orbit288',
     sourcePage: '更换密保',
+    recoveryType: 'security-question',
+    recoveryTypeLabel: '密保找回',
     securityQuestion: '3.您初中班主任的姓名是？',
     method: 'first-deposit',
     methodLabel: '首次充值',
@@ -42,6 +83,8 @@ export const initialSecurityRecoveryRequests = [
     memberId: '185',
     username: 'sky185',
     sourcePage: '添加TRC20地址',
+    recoveryType: 'security-question',
+    recoveryTypeLabel: '密保找回',
     securityQuestion: '7.您第一所学校的名称是？',
     method: 'recent-withdrawal',
     methodLabel: '最近成功提现',
@@ -66,6 +109,8 @@ export const initialSecurityRecoveryRequests = [
     memberId: '219',
     username: 'mango219',
     sourcePage: '更换密保',
+    recoveryType: 'security-question',
+    recoveryTypeLabel: '密保找回',
     securityQuestion: '12.您最喜欢的城市是？',
     method: 'common-wallet',
     methodLabel: '历史常用钱包',
@@ -88,5 +133,13 @@ export function createInitialSecurityRecoveryRequests() {
   return initialSecurityRecoveryRequests.map((request) => ({
     ...request,
     screenshots: (request.screenshots || []).map((image) => ({ ...image })),
+    recharge: request.recharge ? {
+      ...request.recharge,
+      screenshots: (request.recharge.screenshots || []).map((image) => ({ ...image })),
+    } : undefined,
+    withdrawal: request.withdrawal ? {
+      ...request.withdrawal,
+      screenshots: (request.withdrawal.screenshots || []).map((image) => ({ ...image })),
+    } : undefined,
   }))
 }

@@ -417,7 +417,10 @@ function PageRenderer({ path, config, toast, riskGames, setRiskGames, memberRisk
   if (config.type === 'game-risk-control') return <GameRiskControlPage games={riskGames} setGames={setRiskGames} toast={toast} />
   if (config.type === 'member-risk-rules') return <MemberRiskRulePage rules={memberRiskRules} setRules={setMemberRiskRules} allocateRuleId={allocateMemberRiskRuleId} setMutedAlerts={setMutedMemberAlerts} toast={toast} />
   if (config.type === 'risk-member-list') return <RiskMemberListPage rules={memberRiskRules} mutedAlerts={mutedMemberAlerts} setMutedAlerts={setMutedMemberAlerts} toast={toast} />
-  if (config.type === 'security-recovery') return <SecurityRecoveryPage requests={securityRecoveryRequests} setRequests={setSecurityRecoveryRequests} onApprove={(request) => { if (String(request.memberId) === '133') setSecurityProfile({ ...createInitialSecurityProfile(), resetGranted: true }) }} toast={toast} />
+  if (config.type === 'security-recovery') return <SecurityRecoveryPage requests={securityRecoveryRequests} setRequests={setSecurityRecoveryRequests} onApprove={(request) => {
+    if (request.recoveryType === 'login-password') return
+    if (String(request.memberId) === '133') setSecurityProfile({ ...createInitialSecurityProfile(), resetGranted: true })
+  }} toast={toast} />
 
   const special = {
     dashboard: Dashboard,

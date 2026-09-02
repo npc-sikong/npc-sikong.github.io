@@ -1,7 +1,7 @@
 export const navGroups = [
   {
     label: '会员管理', icon: 'Users', children: [
-      ['/member/security-recovery', '密保找回'],
+      ['/member/security-recovery', '会员找回审核'],
       ['/member/wage-report', '会员工资报表'],
       ['/member/wallet', '会员钱包列表'],
       ['/member/tag', '会员标签'],
@@ -241,7 +241,7 @@ export const memberAnalysisRows = [
 export const pageConfigs = {
   '/version-notes': page('版本说明', { type: 'version-notes' }),
   '/workbench': page('工作台', { type: 'dashboard' }),
-  '/member/security-recovery': page('密保找回', { type: 'security-recovery' }),
+  '/member/security-recovery': page('会员找回审核', { type: 'security-recovery' }),
   '/finance/wallet-reconciliation': page('钱包资金对账', { type: 'wallet-reconciliation' }),
   '/risk/game-profit-loss': page('游戏盈亏风控设置', { type: 'game-risk-control' }),
   '/risk/member-rule-setting': page('会员风控规则设置', { type: 'member-risk-rules' }),

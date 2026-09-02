@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Award, CheckCircle2, Gift, ShieldCheck, Sparkles, Trophy } from 'lucide-react'
+import { Award, CheckCircle2, Gift, ImagePlus, ShieldCheck, Sparkles, Trash2, Trophy } from 'lucide-react'
 import { BENEFITS, LUCKY5_REWARDS, RANK_REWARDS, STREAK_REWARDS } from './accountData'
 import {
   Card,
@@ -129,28 +129,231 @@ function RegisterPage(props) {
 function RecoverPage(props) {
   const actions = useSfaActions(props)
   const [method, setMethod] = useState('question')
-  const [stage, setStage] = useState('verify')
+  const [questionVerified, setQuestionVerified] = useState(false)
+  const [username, setUsername] = useState('')
   const [answer, setAnswer] = useState('')
-  const [address, setAddress] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
-  const verify = () => {
-    if (method === 'question' && !answer.trim()) return actions.notify('请输入密保答案')
-    if (method === 'address' && !/^T[A-Za-z0-9]{20,}$/.test(address)) return actions.notify('请输入已绑定TRC20地址')
-    setStage('reset')
-    actions.notify('验证通过', 'success')
+  const [rechargeAddress, setRechargeAddress] = useState('')
+  const [withdrawalAddress, setWithdrawalAddress] = useState('')
+  const [rechargeScreenshot, setRechargeScreenshot] = useState(null)
+  const [withdrawalScreenshot, setWithdrawalScreenshot] = useState(null)
+  const [submittedRequest, setSubmittedRequest] = useState(null)
+
+  const normalizedUsername = username.trim()
+  const memberId = normalizedUsername.toLowerCase() === 'evan777' ? '133' : normalizedUsername
+  const latestAccountRequest = useMemo(() => (props.recoveryRequests || []).find((request) => (
+    request.recoveryType === 'login-password'
+    && (String(request.memberId || '') === memberId || String(request.username || '').toLowerCase() === normalizedUsername.toLowerCase())
+  )), [memberId, normalizedUsername, props.recoveryRequests])
+
+  const validateUsername = () => {
+    if (!/^[A-Za-z0-9]{6,16}$/.test(normalizedUsername)) {
+      actions.notify('请输入6-16位字母或数字会员账号')
+      return false
+    }
+    return true
   }
-  const reset = () => {
-    if (password.length < 6 || password.length > 20) return actions.notify('请输入新密码（6-20位）')
-    if (password !== confirm) return actions.notify('两次密码输入不一致')
+
+  const validatePassword = () => {
+    if (password.length < 6 || password.length > 20) {
+      actions.notify('请输入新密码（6-20位）')
+      return false
+    }
+    if (password !== confirm) {
+      actions.notify('两次密码输入不一致')
+      return false
+    }
+    return true
+  }
+
+  const verifyQuestion = () => {
+    if (!validateUsername()) return
+    if (!answer.trim()) return actions.notify('请输入密保答案')
+    setQuestionVerified(true)
+    actions.notify('密保验证通过，请设置新密码', 'success')
+  }
+
+  const resetByQuestion = () => {
+    if (!validatePassword()) return
     actions.notify('密码重置成功，请使用新密码登录', 'success')
     actions.go('/pages/login/login')
   }
+
+  const chooseScreenshot = async (event, kind) => {
+    const input = event.currentTarget
+    const file = input.files?.[0]
+    input.value = ''
+    if (!file) return
+    if (!['image/jpeg', 'image/png'].includes(file.type)) return actions.notify('截图仅支持 JPG、JPEG 或 PNG 格式')
+    if (file.size > 5 * 1024 * 1024) return actions.notify('单张截图不能超过5MB')
+    try {
+      const dataUrl = await readRecoveryImage(file)
+      const image = { id: `${kind}-${Date.now()}`, name: file.name, type: file.type, size: file.size, dataUrl, category: kind }
+      if (kind === 'recharge') setRechargeScreenshot(image)
+      else setWithdrawalScreenshot(image)
+      actions.notify(`${kind === 'recharge' ? '最近充值' : '最近提现'}截图已选择`, 'success')
+    } catch {
+      actions.notify('图片读取失败，请重新选择')
+    }
+  }
+
+  const submitTransactionRecovery = () => {
+    if (!validateUsername() || !validatePassword()) return
+    if (!rechargeScreenshot || !rechargeAddress.trim()) return actions.notify('请同时提供最近充值截图和充值钱包地址')
+    if (!withdrawalScreenshot || !withdrawalAddress.trim()) return actions.notify('请同时提供最近提现截图和提现钱包地址')
+
+    const pendingRequest = (props.recoveryRequests || []).find((request) => (
+      request.status === '待审核'
+      && (String(request.memberId || '') === memberId || String(request.username || '').toLowerCase() === normalizedUsername.toLowerCase())
+    ))
+    if (pendingRequest) {
+      setSubmittedRequest(pendingRequest)
+      return actions.notify(`已有待审核申请 ${pendingRequest.requestNo || pendingRequest.id}，请勿重复提交`)
+    }
+
+    const now = new Date()
+    const sequence = String((props.recoveryRequests?.length || 0) + 1).padStart(4, '0')
+    const requestNo = `MR${formatRecoveryDate(now, false)}${sequence}`
+    const request = {
+      id: requestNo,
+      requestNo,
+      recoveryType: 'login-password',
+      recoveryTypeLabel: '登录密码找回',
+      memberId,
+      username: normalizedUsername,
+      sourcePage: 'H5登录页 · 找回密码',
+      securityQuestion: '-',
+      method: 'transaction-proof',
+      methodLabel: '交易资料找回',
+      condition: '最近充值截图与充值钱包地址、最近提现截图与提现钱包地址必须同时提供并由运营核对。',
+      recharge: {
+        walletAddress: rechargeAddress.trim(),
+        historyWalletAddress: rechargeAddress.trim(),
+        reference: '最近成功充值：100.00 USDT · 演示历史记录',
+        screenshots: [rechargeScreenshot],
+      },
+      withdrawal: {
+        walletAddress: withdrawalAddress.trim(),
+        historyWalletAddress: withdrawalAddress.trim(),
+        reference: '最近成功提现：60.00 USDT · 演示历史记录',
+        screenshots: [withdrawalScreenshot],
+      },
+      reply: `充值钱包地址：${rechargeAddress.trim()}；提现钱包地址：${withdrawalAddress.trim()}`,
+      screenshots: [rechargeScreenshot, withdrawalScreenshot],
+      passwordSubmitted: true,
+      newPassword: password,
+      status: '待审核',
+      submittedAt: formatRecoveryDate(now),
+      reviewer: '',
+      reviewedAt: '',
+      rejectReason: '',
+    }
+    const accepted = props.onSubmitRecovery?.(request)
+    if (accepted === false) return actions.notify('该会员已有待审核申请，请勿重复提交')
+    setSubmittedRequest(request)
+    actions.notify(`申请 ${requestNo} 已提交`, 'success')
+  }
+
+  if (submittedRequest) {
+    const liveRequest = (props.recoveryRequests || []).find((request) => (
+      String(request.id || request.requestNo) === String(submittedRequest.id || submittedRequest.requestNo)
+    )) || submittedRequest
+    const requestNo = liveRequest.requestNo || liveRequest.id
+    const status = liveRequest.status || '待审核'
+    const approved = status === '审核通过'
+    const rejected = status === '已驳回'
+    const retry = () => {
+      setSubmittedRequest(null)
+      setRechargeScreenshot(null)
+      setWithdrawalScreenshot(null)
+      setPassword('')
+      setConfirm('')
+    }
+    return (
+      <PageShell title="找回密码" onBack={actions.back} message={actions.localMessage} className="sfa-password-recovery-page" bottom={<PrimaryButton onClick={rejected ? retry : () => actions.go('/pages/login/login')}>{rejected ? '重新申请' : '返回登录'}</PrimaryButton>}>
+        <Card className="sfa-password-recovery-result">
+          <span>{approved ? <CheckCircle2 size={31} /> : <ShieldCheck size={31} />}</span>
+          <h2>{approved ? '找回已完成' : rejected ? '申请未通过' : '申请已提交'}</h2>
+          <p>{approved ? '运营审核已通过，申请时填写的新密码已生效。' : rejected ? '原密码保持不变，请按驳回说明补充材料后重新申请。' : '运营审核通过后，新密码才会生效。'}</p>
+          <div><small>申请单号</small><b>{requestNo}</b></div>
+          <div><small>当前状态</small><strong>{status}</strong></div>
+          {rejected && <div><small>驳回说明</small><b>{liveRequest.rejectReason || liveRequest.reviewRemark || '材料与历史演示记录不一致'}</b></div>}
+        </Card>
+        <Hint tone={approved ? 'success' : 'warning'}>{approved ? '本次仅更新当前浏览器内的演示状态，不会修改任何真实账号。' : rejected ? '重新申请仍须同时提交充值和提现两组完整材料。' : '请妥善保管申请单号。审核期间无需重复提交，也请勿向任何人提供新密码。'}</Hint>
+      </PageShell>
+    )
+  }
+
+  const changeMethod = (value) => {
+    setMethod(value)
+    setQuestionVerified(false)
+    setAnswer('')
+    setPassword('')
+    setConfirm('')
+  }
+
+  const bottomAction = method === 'question'
+    ? <PrimaryButton onClick={questionVerified ? resetByQuestion : verifyQuestion}>{questionVerified ? '确认修改密码' : '验证密保'}</PrimaryButton>
+    : <PrimaryButton onClick={submitTransactionRecovery}>提交审核</PrimaryButton>
+
   return (
-    <PageShell title="找回密码" subtitle="验证通过后可设置新的登录密码" onBack={actions.back} message={actions.localMessage} bottom={<PrimaryButton onClick={stage === 'verify' ? verify : reset}>{stage === 'verify' ? '下一步' : '重置密码'}</PrimaryButton>}>
-      {stage === 'verify' ? <><Segmented items={[{ value: 'question', label: '密保找回' }, { value: 'address', label: 'TRC20地址找回' }]} value={method} onChange={setMethod} /><Card>{method === 'question' ? <><SectionTitle>获取密保</SectionTitle><p className="sfa-question-card">15.您的出生地是?</p><small className="sfa-field-tip">密保提示：户口所在地</small><Field label="密保答案" value={answer} onChange={setAnswer} /></> : <Field label="已绑定TRC20地址" value={address} onChange={setAddress} placeholder="请输入已绑定TRC20地址" />}</Card></> : <Card><PasswordField label="新密码" value={password} onChange={setPassword} placeholder="请输入新密码（6-20位）" /><PasswordField label="确认新密码" value={confirm} onChange={setConfirm} /></Card>}
+    <PageShell title="找回密码" subtitle={method === 'question' ? '密保验证通过后可直接修改' : '交易资料需经运营审核'} onBack={actions.back} message={actions.localMessage} className="sfa-password-recovery-page" bottom={bottomAction}>
+      <Card className="sfa-password-recovery-account">
+        <Field label="会员账号" value={username} disabled={questionVerified} onChange={(value) => setUsername(value.replace(/[^A-Za-z0-9]/g, '').slice(0, 16))} placeholder="请输入6-16位会员账号" />
+        {method === 'transaction' && latestAccountRequest && <button type="button" className="sfa-password-recovery-latest" onClick={() => setSubmittedRequest(latestAccountRequest)}><span><small>最近申请</small><b>{latestAccountRequest.requestNo || latestAccountRequest.id}</b></span><strong>{latestAccountRequest.status || '待审核'} · 查看</strong></button>}
+      </Card>
+      <Segmented items={[{ value: 'question', label: '密保找回' }, { value: 'transaction', label: '交易资料找回' }]} value={method} onChange={changeMethod} />
+      {method === 'question' ? (
+        <Card className="sfa-password-recovery-card">
+          {!questionVerified ? <><SectionTitle>回答密保问题</SectionTitle><p className="sfa-question-card">15.您的出生地是?</p><small className="sfa-field-tip">密保提示：户口所在地</small><Field label="密保答案" value={answer} onChange={setAnswer} placeholder="请输入密保答案" /></> : <><div className="sfa-password-recovery-verified"><CheckCircle2 size={20} /><span><b>密保验证通过</b><small>请设置新的登录密码</small></span></div><PasswordField label="新密码" value={password} onChange={setPassword} placeholder="请输入新密码（6-20位）" /><PasswordField label="确认新密码" value={confirm} onChange={setConfirm} placeholder="请再次输入新密码" /></>}
+        </Card>
+      ) : (
+        <>
+          <Card className="sfa-password-recovery-card">
+            <SectionTitle>设置审核通过后的新密码</SectionTitle>
+            <PasswordField label="新密码" value={password} onChange={setPassword} placeholder="请输入新密码（6-20位）" />
+            <PasswordField label="确认新密码" value={confirm} onChange={setConfirm} placeholder="请再次输入新密码" />
+            <small className="sfa-field-tip">审核通过前新密码不会生效，运营后台仅显示“已填写”，不会展示密码内容。</small>
+          </Card>
+          <div className="sfa-recovery-proof-list">
+            <RecoveryProofCard title="最近充值资料" addressLabel="充值钱包地址" address={rechargeAddress} onAddressChange={setRechargeAddress} screenshot={rechargeScreenshot} onChoose={(event) => chooseScreenshot(event, 'recharge')} onRemove={() => setRechargeScreenshot(null)} />
+            <RecoveryProofCard title="最近提现资料" addressLabel="提现钱包地址" address={withdrawalAddress} onAddressChange={setWithdrawalAddress} screenshot={withdrawalScreenshot} onChoose={(event) => chooseScreenshot(event, 'withdrawal')} onRemove={() => setWithdrawalScreenshot(null)} />
+          </div>
+          <Hint tone="warning">本页仅为前端演示。请勿填写真实密码、真实钱包敏感信息，或上传含私钥、助记词的截图；图片只在本机预览。</Hint>
+        </>
+      )}
     </PageShell>
   )
+}
+
+function RecoveryProofCard({ title, addressLabel, address, onAddressChange, screenshot, onChoose, onRemove }) {
+  return (
+    <Card className="sfa-recovery-proof-card">
+      <SectionTitle>{title}</SectionTitle>
+      <Field label={addressLabel} value={address} onChange={onAddressChange} placeholder={`请输入${addressLabel}`} />
+      <div className="sfa-recovery-upload-field">
+        <div><b>交易截图</b><small>必填，1张 JPG/PNG，≤5MB</small></div>
+        {screenshot ? <figure><img src={screenshot.dataUrl} alt={title} /><figcaption title={screenshot.name}>{screenshot.name}</figcaption><button type="button" onClick={onRemove} aria-label={`删除${title}截图`}><Trash2 size={15} /></button></figure> : <label><ImagePlus size={18} /><span>选择截图</span><input type="file" accept="image/jpeg,image/png" onChange={onChoose} /></label>}
+      </div>
+    </Card>
+  )
+}
+
+function readRecoveryImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result || ''))
+    reader.onerror = () => reject(new Error('图片读取失败'))
+    reader.readAsDataURL(file)
+  })
+}
+
+function formatRecoveryDate(date, includeTime = true) {
+  const pad = (value) => String(value).padStart(2, '0')
+  const day = `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}`
+  if (!includeTime) return day
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
 }
 
 function AgreementPage(props) {
