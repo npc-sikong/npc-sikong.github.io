@@ -116,6 +116,7 @@ function App() {
   const path = usePathname()
   const [toasts, setToasts] = useState([])
   const [securityProfile, setSecurityProfile] = useState(createInitialSecurityProfile)
+  const [googleBound, setGoogleBound] = useState(true)
   const [securityRecoveryRequests, setSecurityRecoveryRequests] = useState(createInitialSecurityRecoveryRequests)
 
   const toast = (message, type = 'success') => {
@@ -145,6 +146,8 @@ function App() {
       <StorefrontApp
         securityProfile={securityProfile}
         setSecurityProfile={setSecurityProfile}
+        googleBound={googleBound}
+        setGoogleBound={setGoogleBound}
         recoveryRequests={securityRecoveryRequests}
         onSubmitRecovery={submitSecurityRecovery}
       />
@@ -160,6 +163,7 @@ function App() {
         securityRecoveryRequests={securityRecoveryRequests}
         setSecurityRecoveryRequests={setSecurityRecoveryRequests}
         setSecurityProfile={setSecurityProfile}
+        setGoogleBound={setGoogleBound}
       />
       <ToastStack items={toasts} />
     </>
@@ -179,7 +183,7 @@ function ToastStack({ items }) {
   )
 }
 
-function AdminShell({ path, toast, logout, securityRecoveryRequests, setSecurityRecoveryRequests, setSecurityProfile }) {
+function AdminShell({ path, toast, logout, securityRecoveryRequests, setSecurityRecoveryRequests, setSecurityProfile, setGoogleBound }) {
   const [collapsed, setCollapsed] = useState(false)
   const [openGroups, setOpenGroups] = useState(() => new Set([groupForPath(path)?.label].filter(Boolean)))
   const [openTabs, setOpenTabs] = useState([{ path: '/member/list', title: '会员列表' }])
@@ -360,7 +364,7 @@ function AdminShell({ path, toast, logout, securityRecoveryRequests, setSecurity
 
         <main className="main-content">
           <ModuleRequirementFrame path={path}>
-            <PageRenderer path={path} config={pageConfigs[path] || pageConfigs['/member/list']} toast={toast} riskGames={riskGames} setRiskGames={setRiskGames} memberRiskRules={memberRiskRules} setMemberRiskRules={setMemberRiskRules} allocateMemberRiskRuleId={() => nextMemberRiskRuleId.current++} mutedMemberAlerts={mutedMemberAlerts} setMutedMemberAlerts={setMutedMemberAlerts} securityRecoveryRequests={securityRecoveryRequests} setSecurityRecoveryRequests={setSecurityRecoveryRequests} setSecurityProfile={setSecurityProfile} />
+            <PageRenderer path={path} config={pageConfigs[path] || pageConfigs['/member/list']} toast={toast} riskGames={riskGames} setRiskGames={setRiskGames} memberRiskRules={memberRiskRules} setMemberRiskRules={setMemberRiskRules} allocateMemberRiskRuleId={() => nextMemberRiskRuleId.current++} mutedMemberAlerts={mutedMemberAlerts} setMutedMemberAlerts={setMutedMemberAlerts} securityRecoveryRequests={securityRecoveryRequests} setSecurityRecoveryRequests={setSecurityRecoveryRequests} setSecurityProfile={setSecurityProfile} setGoogleBound={setGoogleBound} />
           </ModuleRequirementFrame>
         </main>
       </section>
@@ -412,14 +416,21 @@ function Switch({ checked, onChange, disabled }) {
   return <button type="button" className={`switch ${checked ? 'checked' : ''}`} disabled={disabled} onClick={onChange}><i /></button>
 }
 
-function PageRenderer({ path, config, toast, riskGames, setRiskGames, memberRiskRules, setMemberRiskRules, allocateMemberRiskRuleId, mutedMemberAlerts, setMutedMemberAlerts, securityRecoveryRequests, setSecurityRecoveryRequests, setSecurityProfile }) {
+function PageRenderer({ path, config, toast, riskGames, setRiskGames, memberRiskRules, setMemberRiskRules, allocateMemberRiskRuleId, mutedMemberAlerts, setMutedMemberAlerts, securityRecoveryRequests, setSecurityRecoveryRequests, setSecurityProfile, setGoogleBound }) {
   if (config.type === 'version-notes') return <VersionNotesPage onNavigate={go} />
   if (config.type === 'game-risk-control') return <GameRiskControlPage games={riskGames} setGames={setRiskGames} toast={toast} />
   if (config.type === 'member-risk-rules') return <MemberRiskRulePage rules={memberRiskRules} setRules={setMemberRiskRules} allocateRuleId={allocateMemberRiskRuleId} setMutedAlerts={setMutedMemberAlerts} toast={toast} />
   if (config.type === 'risk-member-list') return <RiskMemberListPage rules={memberRiskRules} mutedAlerts={mutedMemberAlerts} setMutedAlerts={setMutedMemberAlerts} toast={toast} />
   if (config.type === 'security-recovery') return <SecurityRecoveryPage requests={securityRecoveryRequests} setRequests={setSecurityRecoveryRequests} onApprove={(request) => {
     if (request.recoveryType === 'login-password') return
-    if (String(request.memberId) === '133') setSecurityProfile({ ...createInitialSecurityProfile(), resetGranted: true })
+    if (String(request.memberId) !== '133') return
+    if (request.recoveryType === 'google-auth') {
+      setGoogleBound(false)
+      return
+    }
+    if (request.recoveryType === 'security-recovery' || request.recoveryType === 'security-question') {
+      setSecurityProfile({ ...createInitialSecurityProfile(), resetGranted: true })
+    }
   }} toast={toast} />
 
   const special = {

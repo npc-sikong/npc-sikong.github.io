@@ -118,9 +118,9 @@ function HijackGuidePage({ onBack, notify }) {
   )
 }
 
-function StorefrontPage({ route, targetPath, search, navigate, notify, securityProfile, setSecurityProfile, recoveryRequests, onSubmitRecovery }) {
+function StorefrontPage({ route, targetPath, search, navigate, notify, securityProfile, setSecurityProfile, googleBound, setGoogleBound, recoveryRequests, onSubmitRecovery }) {
   const componentPath = `${targetPath}${search}`
-  const common = { navigate, path: componentPath, securityProfile, setSecurityProfile, recoveryRequests, onSubmitRecovery }
+  const common = { navigate, path: componentPath, securityProfile, setSecurityProfile, googleBound, setGoogleBound, recoveryRequests, onSubmitRecovery }
 
   switch (route.renderer) {
     case 'home': return <HomePage onNavigate={navigate} initialTab={new URLSearchParams(search).get('tab') || 'hot'} />
@@ -166,12 +166,15 @@ function StorefrontPage({ route, targetPath, search, navigate, notify, securityP
 export default function StorefrontApp({
   securityProfile: controlledSecurityProfile,
   setSecurityProfile: controlledSetSecurityProfile,
+  googleBound: controlledGoogleBound,
+  setGoogleBound: controlledSetGoogleBound,
   recoveryRequests: controlledRecoveryRequests,
   onSubmitRecovery: controlledSubmitRecovery,
 } = {}) {
   const [location, setLocation] = useState(readLocation)
   const [toast, setToast] = useState(null)
   const [localSecurityProfile, setLocalSecurityProfile] = useState(defaultSecurityProfile)
+  const [localGoogleBound, setLocalGoogleBound] = useState(true)
   const [localRecoveryRequests, setLocalRecoveryRequests] = useState([])
   const toastTimer = useRef(null)
   const localNavigationDepth = useRef(0)
@@ -182,6 +185,8 @@ export default function StorefrontApp({
   const targetPath = route?.targetPath || '/pages/index/index'
   const securityProfile = controlledSecurityProfile || localSecurityProfile
   const setSecurityProfile = controlledSetSecurityProfile || setLocalSecurityProfile
+  const googleBound = controlledGoogleBound ?? localGoogleBound
+  const setGoogleBound = controlledSetGoogleBound || setLocalGoogleBound
   const recoveryRequests = controlledRecoveryRequests || localRecoveryRequests
 
   const submitRecovery = useCallback((request) => {
@@ -254,7 +259,7 @@ export default function StorefrontApp({
         </button>
       </div>
       <div className="storefront-page-stage" ref={pageStageRef}>
-        <StorefrontPage route={route} targetPath={targetPath} search={search} navigate={navigate} notify={notify} securityProfile={securityProfile} setSecurityProfile={setSecurityProfile} recoveryRequests={recoveryRequests} onSubmitRecovery={submitRecovery} />
+        <StorefrontPage route={route} targetPath={targetPath} search={search} navigate={navigate} notify={notify} securityProfile={securityProfile} setSecurityProfile={setSecurityProfile} googleBound={googleBound} setGoogleBound={setGoogleBound} recoveryRequests={recoveryRequests} onSubmitRecovery={submitRecovery} />
       </div>
       <Toast open={Boolean(toast)} message={toast?.message} type={toast?.type} zIndex={2400} />
     </div>

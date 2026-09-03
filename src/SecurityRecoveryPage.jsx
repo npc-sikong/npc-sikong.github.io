@@ -19,6 +19,7 @@ import {
   X,
   XCircle,
 } from 'lucide-react'
+import { initialSecurityRecoveryRequests as sharedInitialSecurityRecoveryRequests } from './securityRecoveryData.js'
 import './security-recovery.css'
 
 export const SECURITY_RECOVERY_PATH = '/member/security-recovery'
@@ -28,29 +29,16 @@ export const SECURITY_RECOVERY_SOURCES = [
   '添加TRC20地址',
   '安全中心找回',
   'H5找回密码',
+  '谷歌二次验证',
 ]
 
 export const RECOVERY_TYPE_OPTIONS = [
   { value: '密保找回', label: '密保找回' },
   { value: '登录密码找回', label: '登录密码找回' },
+  { value: '谷歌二次验证找回', label: '谷歌二次验证找回' },
 ]
 
 export const SECURITY_RECOVERY_METHODS = [
-  {
-    value: '首次充值',
-    label: '首次充值',
-    condition: '请提供首次成功充值的币种、实际到账金额和大致日期，可补充充值订单或链上凭证截图。',
-  },
-  {
-    value: '最近成功提现',
-    label: '最近成功提现',
-    condition: '请提供最近一次成功提现的币种、实际到账金额、大致时间及收款TRC20地址后6位，可补充提现凭证截图。',
-  },
-  {
-    value: '历史常用钱包',
-    label: '历史常用钱包',
-    condition: '请提供历史常用钱包地址或地址尾号，并说明充值、提现等使用场景，可补充钱包地址页或对应交易截图。',
-  },
   {
     value: '充值及提现资料核验',
     label: '充值及提现资料核验',
@@ -60,103 +48,20 @@ export const SECURITY_RECOVERY_METHODS = [
 
 const PAGE_SIZES = [10, 20, 50]
 const STATUS_OPTIONS = ['待审核', '审核通过', '已驳回']
-
-function escapeSvg(value) {
-  return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&apos;')
-}
-
-function demoProofImage(title, lines, accent = '#356cff') {
-  const safeTitle = escapeSvg(title)
-  const lineNodes = lines.map((line, index) => (
-    `<text x="44" y="${116 + index * 34}" font-family="Arial, PingFang SC, sans-serif" font-size="19" fill="#455066">${escapeSvg(line)}</text>`
-  )).join('')
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="760" height="440" viewBox="0 0 760 440">
-    <rect width="760" height="440" fill="#f3f6fb"/>
-    <rect x="24" y="24" width="712" height="392" rx="18" fill="#ffffff" stroke="#dce3ef"/>
-    <rect x="24" y="24" width="712" height="58" rx="18" fill="${accent}"/>
-    <rect x="24" y="62" width="712" height="20" fill="${accent}"/>
-    <text x="44" y="61" font-family="Arial, PingFang SC, sans-serif" font-size="22" font-weight="700" fill="#ffffff">${safeTitle}</text>
-    ${lineNodes}
-    <line x1="44" y1="330" x2="716" y2="330" stroke="#e4e9f2"/>
-    <text x="44" y="372" font-family="Arial, PingFang SC, sans-serif" font-size="16" fill="#8a94a6">前端演示凭证 · 不代表真实交易</text>
-  </svg>`
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`
-}
-
-const rechargeProof = demoProofImage('首次充值记录', [
-  '币种：USDT',
-  '实际到账：100.00 USDT',
-  '充值日期：2026-07-12',
-  '订单状态：成功',
-])
-
-const withdrawProof = demoProofImage('提现凭证', [
-  '币种：USDT',
-  '实际到账：500.00 USDT',
-  '提现日期：2026-08-20',
-  '收款地址尾号：V6Y2P3',
-], '#16a56f')
-
-export const initialSecurityRecoveryRequests = [
-  {
-    id: 'MB202608280001',
-    recoveryType: 'security-recovery',
-    memberId: '133',
-    username: 'evan777',
-    source: '更换密保',
-    method: '首次充值核验',
-    condition: SECURITY_RECOVERY_METHODS[0].condition,
-    reply: '首次充值为 100 USDT，大约在 2026 年 7 月 12 日到账。',
-    images: [{ id: 'proof-recharge-1', name: '首次充值凭证.png', url: rechargeProof }],
-    submittedAt: '2026-08-28 04:56:18',
-    status: '待审核',
-    reviewer: '',
-    reviewedAt: '',
-    reviewRemark: '',
-  },
-  {
-    id: 'MB202608280002',
-    recoveryType: 'security-recovery',
-    memberId: '291',
-    username: 'evanmm88',
-    source: '账户管理 · 添加TRC20地址',
-    method: '最近一次成功提现核验',
-    condition: SECURITY_RECOVERY_METHODS[1].condition,
-    reply: '最近一次提现 500 USDT，收款地址后 6 位是 V6Y2P3。',
-    images: [{ id: 'proof-withdraw-1', name: '最近提现凭证.png', url: withdrawProof }],
-    submittedAt: '2026-08-28 04:48:06',
-    status: '审核通过',
-    reviewer: 'admin1',
-    reviewedAt: '2026-08-28 04:51:32',
-    reviewRemark: '客服核验通过，会员密保已恢复为未设置状态。',
-  },
-  {
-    id: 'MB202608280003',
-    recoveryType: 'security-recovery',
-    memberId: '288',
-    username: 'Appleee',
-    source: '安全中心 · 找回密保',
-    method: '账户注册与常用登录核验',
-    condition: SECURITY_RECOVERY_METHODS[2].condition,
-    reply: '大约 8 月中旬注册，常用地区为新加坡，设备为 iPhone。',
-    images: [],
-    submittedAt: '2026-08-28 04:36:42',
-    status: '已驳回',
-    reviewer: 'admin1',
-    reviewedAt: '2026-08-28 04:41:09',
-    reviewRemark: '提交信息与演示账户资料不一致，请重新选择其他核验方式。',
-  },
-]
+export const initialSecurityRecoveryRequests = sharedInitialSecurityRecoveryRequests
 
 function cloneInitialRequests() {
   return initialSecurityRecoveryRequests.map((request) => ({
     ...request,
-    images: request.images.map((image) => ({ ...image })),
+    images: (request.images || request.screenshots || []).map((image) => ({ ...image })),
+    recharge: request.recharge ? {
+      ...request.recharge,
+      screenshots: (request.recharge.screenshots || []).map((image) => ({ ...image })),
+    } : undefined,
+    withdrawal: request.withdrawal ? {
+      ...request.withdrawal,
+      screenshots: (request.withdrawal.screenshots || []).map((image) => ({ ...image })),
+    } : undefined,
   }))
 }
 
@@ -183,19 +88,9 @@ function normalizeEvidenceGroup(group, fallbackAddress = '', prefix = 'proof') {
   }
 }
 
-function formatConditionValue(value) {
-  if (value == null || value === '') return ''
-  if (Array.isArray(value)) return value.map(formatConditionValue).filter(Boolean).join('；')
-  if (typeof value !== 'object') return String(value)
-  const preferredLabel = value.label || value.name || value.field || value.title || value.prompt
-  const preferredValue = value.value ?? value.text ?? value.content ?? value.description
-  if (preferredLabel && preferredValue != null && preferredValue !== '') return `${preferredLabel}：${formatConditionValue(preferredValue)}`
-  if (preferredLabel) return String(preferredLabel)
-  return Object.entries(value).map(([key, item]) => `${key}：${formatConditionValue(item)}`).filter((item) => !item.endsWith('：')).join('；')
-}
-
 function sourceLabel(value) {
   const source = String(value || '')
+  if (source.includes('google') || source.includes('谷歌')) return '谷歌二次验证'
   if (source.includes('recover-password') || source.includes('找回密码')) return 'H5找回密码'
   if (source.includes('account-bind') || source.includes('TRC20')) return '添加TRC20地址'
   if (source.includes('security-question')) return '更换密保'
@@ -216,29 +111,28 @@ function normalizeRecoveryType(value) {
   if (['login-password', 'login-password-reset', 'password', 'password-recovery'].includes(type) || type.includes('登录密码')) {
     return { key: 'login-password', label: '登录密码找回' }
   }
+  if (['google-auth', 'google-auth-reset', 'google-2fa', 'totp-reset', '2fa-reset'].includes(type) || type.includes('google') || type.includes('谷歌')) {
+    return { key: 'google-auth', label: '谷歌二次验证找回' }
+  }
   return { key: 'security-recovery', label: '密保找回' }
 }
 
 function normalizeRequest(request, index) {
   const recoveryType = normalizeRecoveryType(request.recoveryType || request.requestType || request.recoveryTypeLabel)
-  const rawMethod = request.method || request.verificationMethod || '首次充值核验'
-  const methodAliases = {
-    'first-deposit': '首次充值',
-    '首次充值核验': '首次充值',
-    'recent-withdrawal': '最近成功提现',
-    '最近一次成功提现核验': '最近成功提现',
-    'common-wallet': '历史常用钱包',
-    '账户注册与常用登录核验': '历史常用钱包',
-    'transaction-proof': '充值及提现资料核验',
-  }
-  const method = methodAliases[request.methodLabel] || methodAliases[rawMethod] || request.methodLabel || SECURITY_RECOVERY_METHODS.find((item) => item.value === rawMethod)?.label || rawMethod
-  const methodDefinition = SECURITY_RECOVERY_METHODS.find((item) => item.value === method)
-  const conditions = formatConditionValue(request.conditions)
   const recharge = normalizeEvidenceGroup(request.recharge, request.rechargeWalletAddress, 'recharge')
   const withdrawal = normalizeEvidenceGroup(request.withdrawal, request.withdrawalWalletAddress, 'withdrawal')
   const passwordSubmitted = Boolean(request.passwordSubmitted || (typeof request.newPassword === 'string' && request.newPassword.length))
   const safeRequest = { ...request }
   delete safeRequest.newPassword
+  delete safeRequest.confirmPassword
+  delete safeRequest.password
+  delete safeRequest.answer
+  delete safeRequest.securityAnswer
+  delete safeRequest.reply
+  delete safeRequest.response
+  delete safeRequest.images
+  delete safeRequest.screenshots
+  delete safeRequest.evidenceImages
   return {
     ...safeRequest,
     id: String(request.id || request.requestNo || `MB-DEMO-${index + 1}`),
@@ -247,12 +141,10 @@ function normalizeRequest(request, index) {
     source: sourceLabel(request.source || request.sourcePage || request.applicationSource),
     recoveryType: recoveryType.key,
     recoveryTypeLabel: recoveryType.label,
-    method,
-    methodKey: rawMethod,
+    method: SECURITY_RECOVERY_METHODS[0].label,
+    methodKey: 'transaction-proof',
     securityQuestion: request.securityQuestion || '',
-    condition: request.condition || request.verificationCondition || conditions || methodDefinition?.condition || (recoveryType.key === 'login-password' ? SECURITY_RECOVERY_METHODS[3].condition : '-'),
-    reply: request.reply || request.response || '',
-    images: (request.images || request.screenshots || request.evidenceImages || []).map(normalizeImage),
+    condition: SECURITY_RECOVERY_METHODS[0].condition,
     recharge,
     withdrawal,
     passwordSubmitted,
@@ -290,7 +182,8 @@ function StatusBadge({ status }) {
 }
 
 function RecoveryTypeBadge({ request }) {
-  return <span className={`sr-recovery-type ${request.recoveryType === 'login-password' ? 'password' : 'security'}`}>{request.recoveryTypeLabel}</span>
+  const typeClass = request.recoveryType === 'login-password' ? 'password' : request.recoveryType === 'google-auth' ? 'google' : 'security'
+  return <span className={`sr-recovery-type ${typeClass}`}>{request.recoveryTypeLabel}</span>
 }
 
 function evidenceComplete(group) {
@@ -299,6 +192,7 @@ function evidenceComplete(group) {
 
 function ConfirmModal({ request, canConfirm = true, onClose, onConfirm, onBlocked }) {
   const isPassword = request.recoveryType === 'login-password'
+  const isGoogleAuth = request.recoveryType === 'google-auth'
   return (
     <div className="sr-modal-layer sr-modal-top" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <section className="sr-confirm-dialog" role="alertdialog" aria-modal="true" aria-label="审核通过确认">
@@ -307,10 +201,12 @@ function ConfirmModal({ request, canConfirm = true, onClose, onConfirm, onBlocke
           <h3>确认审核通过</h3>
           {isPassword ? (
             <p>通过申请 <b>{request.id}</b> 后，会员 <b>{request.username}</b> 预先提交的新登录密码将生效。后台只确认“已安全提交”，始终不可查看密码明文。</p>
+          ) : isGoogleAuth ? (
+            <p>通过申请 <b>{request.id}</b> 后，会员 <b>{request.username}</b> 的谷歌二次验证将重置为“未绑定”，会员之后需重新绑定；不修改登录密码或密保。</p>
           ) : (
             <p>通过申请 <b>{request.id}</b> 后，会员 <b>{request.username}</b> 的密保将立即恢复为“未设置”状态，会员需重新设置密保。原密保答案不会被展示或恢复。</p>
           )}
-          {isPassword && <div className={`sr-confirm-readiness ${canConfirm ? 'ready' : 'missing'}`}>{canConfirm ? '充值、提现材料已完成核对' : '请先完成充值和提现材料核对'}</div>}
+          <div className={`sr-confirm-readiness ${canConfirm ? 'ready' : 'missing'}`}>{canConfirm ? '充值、提现两组材料已完成核对' : '请先完成充值和提现两组材料核对'}</div>
         </div>
         <button type="button" className="sr-icon-button sr-confirm-close" onClick={onClose} aria-label="关闭"><X size={18} /></button>
         <footer><button type="button" className="btn btn-default" onClick={onClose}>取消</button><button type="button" className={`btn btn-primary ${canConfirm ? '' : 'sr-disabled-action'}`} aria-disabled={!canConfirm} onClick={() => canConfirm ? onConfirm() : onBlocked?.()}><Check size={14} />确认通过</button></footer>
@@ -395,11 +291,10 @@ function RequestDetailModal({ request, initialTab = '申请信息', proofCheck, 
   const [tab, setTab] = useState(initialTab)
   const [preview, setPreview] = useState(null)
   const isPassword = request.recoveryType === 'login-password'
-  const checksComplete = !isPassword || (proofCheck?.recharge && proofCheck?.withdrawal)
-  const copyReply = () => {
-    navigator.clipboard?.writeText(request.reply || '')
-    notify('用户回复已复制')
-  }
+  const isGoogleAuth = request.recoveryType === 'google-auth'
+  const rechargeChecked = request.status === '审核通过' || Boolean(proofCheck?.recharge)
+  const withdrawalChecked = request.status === '审核通过' || Boolean(proofCheck?.withdrawal)
+  const checksComplete = rechargeChecked && withdrawalChecked && (!isPassword || request.passwordSubmitted)
   return (
     <div className="sr-modal-layer" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
       <section className="sr-detail-dialog" role="dialog" aria-modal="true" aria-label={`会员找回审核详情 ${request.id}`}>
@@ -416,7 +311,7 @@ function RequestDetailModal({ request, initialTab = '申请信息', proofCheck, 
               <DetailRow label="找回类型"><RecoveryTypeBadge request={request} /></DetailRow>
               <DetailRow label="申请来源">{request.source}</DetailRow>
               <DetailRow label="核验方式">{request.method}</DetailRow>
-              {isPassword ? <DetailRow label="新密码提交"><span className={`sr-password-submitted ${request.passwordSubmitted ? 'yes' : 'no'}`}><ShieldCheck size={14} />{request.passwordSubmitted ? '已安全提交' : '未完成提交'}</span><small>为保护会员账号，审核后台不可查看密码明文</small></DetailRow> : <DetailRow label="原密保问题">{request.securityQuestion || '未提供 / 尚未设置'}</DetailRow>}
+              {isPassword ? <DetailRow label="新密码提交"><span className={`sr-password-submitted ${request.passwordSubmitted ? 'yes' : 'no'}`}><ShieldCheck size={14} />{request.passwordSubmitted ? '已安全提交' : '未完成提交'}</span><small>为保护会员账号，审核后台不可查看密码明文</small></DetailRow> : isGoogleAuth ? <DetailRow label="解绑目标"><span className="sr-password-submitted yes"><ShieldCheck size={14} />谷歌二次验证绑定</span><small>审核后台不展示验证密钥或动态验证码</small></DetailRow> : <DetailRow label="原密保问题">{request.securityQuestion || '未提供 / 尚未设置'}</DetailRow>}
               <DetailRow label="提交时间">{request.submittedAt}</DetailRow>
               <DetailRow label="审核状态"><StatusBadge status={request.status} /></DetailRow>
             </div>
@@ -424,26 +319,15 @@ function RequestDetailModal({ request, initialTab = '申请信息', proofCheck, 
           {tab === '核验材料' && (
             <div className="sr-proof-detail">
               <section className="sr-condition-card"><span>本次核验条件</span><p>{request.condition}</p></section>
-              {isPassword ? <>
-                <EvidenceGroupCard title="充值材料" group={request.recharge} checked={proofCheck?.recharge} onCheck={(checked) => onProofCheckChange('recharge', checked)} onPreview={setPreview} notify={notify} />
-                <EvidenceGroupCard title="提现材料" group={request.withdrawal} checked={proofCheck?.withdrawal} onCheck={(checked) => onProofCheckChange('withdrawal', checked)} onPreview={setPreview} notify={notify} />
-                <div className={`sr-proof-result ${checksComplete ? 'ready' : 'pending'}`}><ShieldCheck size={18} /><div><b>{checksComplete ? '两项材料均已核对一致' : '需完成两项材料核对'}</b><span>{checksComplete ? '可进入审核通过确认' : '充值与提现核对项均勾选后才可通过'}</span></div></div>
-              </> : <>
-                <section className="sr-reply-card">
-                  <header><div><b>用户文字回复</b><span>{request.reply ? `${request.reply.length} 字` : '未填写'}</span></div>{request.reply && <button type="button" onClick={copyReply}><ClipboardCopy size={13} />复制</button>}</header>
-                  <p>{request.reply || '本次申请未填写文字回复，请核对下方图片凭证。'}</p>
-                </section>
-                <section className="sr-evidence-card">
-                  <header><b>用户上传截图</b><span>共 {request.images.length} 张</span></header>
-                  {request.images.length ? <div className="sr-image-grid">{request.images.map((image) => <button type="button" key={image.id} onClick={() => setPreview(image)}><img src={image.url} alt={image.name} /><span><FileImage size={13} />{image.name}</span><em><Eye size={15} />查看大图</em></button>)}</div> : <div className="sr-no-images"><ImageIcon size={26} /><span>未上传截图</span></div>}
-                </section>
-              </>}
+              <EvidenceGroupCard title="充值材料" group={request.recharge} checked={rechargeChecked} onCheck={(checked) => onProofCheckChange('recharge', checked)} onPreview={setPreview} notify={notify} />
+              <EvidenceGroupCard title="提现材料" group={request.withdrawal} checked={withdrawalChecked} onCheck={(checked) => onProofCheckChange('withdrawal', checked)} onPreview={setPreview} notify={notify} />
+              <div className={`sr-proof-result ${checksComplete ? 'ready' : 'pending'}`}><ShieldCheck size={18} /><div><b>{checksComplete ? '两项材料均已核对一致' : '需完成两项材料核对'}</b><span>{checksComplete ? (request.status === '待审核' ? '可进入审核通过确认' : '该申请已按双组资料完成核验') : (isPassword && !request.passwordSubmitted ? '还需确认新密码已安全提交' : '充值与提现核对项均勾选后才可通过')}</span></div></div>
             </div>
           )}
           {tab === '审核记录' && (
             <div className="sr-review-record">
               <div className="sr-review-timeline-item submitted"><i /><div><b>会员提交{request.recoveryTypeLabel}申请</b><p>{request.username} 通过“{request.source}”提交“{request.method}”材料。</p><span>{request.submittedAt}</span></div></div>
-              {request.status === '待审核' ? <div className="sr-review-pending"><LoaderCircle size={20} /><div><b>等待客服审核</b><p>当前申请尚未处理，客服审核通过或驳回后将在此处生成记录。</p></div></div> : <div className={`sr-review-timeline-item ${statusClass(request.status)}`}><i /><div><b>{request.status}</b><p>{request.reviewRemark || (request.status === '审核通过' ? (isPassword ? '充值与提现材料核对通过，预提交的新登录密码已生效。' : '客服核验通过，会员密保已恢复为未设置状态。') : '申请材料未通过审核。')}</p><span>客服账号：{request.reviewer || 'admin1'}　{request.reviewedAt || '-'}</span></div></div>}
+              {request.status === '待审核' ? <div className="sr-review-pending"><LoaderCircle size={20} /><div><b>等待客服审核</b><p>当前申请尚未处理，客服审核通过或驳回后将在此处生成记录。</p></div></div> : <div className={`sr-review-timeline-item ${statusClass(request.status)}`}><i /><div><b>{request.status}</b><p>{request.reviewRemark || (request.status === '审核通过' ? (isPassword ? '充值与提现材料核对通过，预提交的新登录密码已生效。' : isGoogleAuth ? '充值与提现材料核对通过，谷歌二次验证已重置为未绑定，会员需重新绑定。' : '客服核验通过，会员密保已恢复为未设置状态。') : '申请材料未通过审核。')}</p><span>客服账号：{request.reviewer || 'admin1'}　{request.reviewedAt || '-'}</span></div></div>}
             </div>
           )}
         </div>
@@ -472,7 +356,7 @@ function RecoveryTable({ rows, loading, onView, onPreview, onApprove, onReject }
               <td><span className="sr-source-cell">{request.source}</span></td>
               <td><span className="sr-method-cell">{request.method}</span></td>
               <td><p className="sr-clamped" title={request.condition}>{request.condition}</p></td>
-              <td><div className="sr-material-cell">{isPassword ? <><p>充值：地址 + {request.recharge.images.length} 张截图</p><p>提现：地址 + {request.withdrawal.images.length} 张截图</p><button type="button" onClick={() => onPreview(request)}><ShieldCheck size={13} />{request.passwordSubmitted ? '新密码已安全提交' : '新密码未提交'}</button></> : <><p title={request.reply}>{request.reply || '无文字回复'}</p>{request.images.length ? <button type="button" onClick={() => onPreview(request)}><FileImage size={13} />图片 {request.images.length} 张</button> : <span>未上传图片</span>}</>}</div></td>
+              <td><div className="sr-material-cell"><p>充值：地址 + {request.recharge.images.length} 张截图</p><p>提现：地址 + {request.withdrawal.images.length} 张截图</p><button type="button" onClick={() => onPreview(request)}><ShieldCheck size={13} />{isPassword ? (request.passwordSubmitted ? '新密码已安全提交' : '新密码未提交') : '查看双组核验资料'}</button></div></td>
               <td><span className="sr-time-cell">{request.submittedAt}</span></td>
               <td><StatusBadge status={request.status} /></td>
               <td><div className="sr-reviewer-cell">{request.status === '待审核' ? <span>等待审核</span> : <><b>{request.reviewer || '-'}</b><span>{request.reviewedAt || '-'}</span><small title={request.reviewRemark}>{request.reviewRemark || '-'}</small></>}</div></td>
@@ -513,7 +397,7 @@ export default function SecurityRecoveryPage({ requests, setRequests, onApprove,
 
   const filteredRequests = useMemo(() => normalizedRequests.filter((request) => {
     const keyword = applied.keyword.trim().toLowerCase()
-    if (keyword && !`${request.id} ${request.memberId} ${request.username} ${request.condition} ${request.reply}`.toLowerCase().includes(keyword)) return false
+    if (keyword && !`${request.id} ${request.memberId} ${request.username} ${request.recharge.walletAddress} ${request.withdrawal.walletAddress}`.toLowerCase().includes(keyword)) return false
     if (applied.type !== '全部' && request.recoveryTypeLabel !== applied.type) return false
     if (applied.source !== '全部' && request.source !== applied.source) return false
     if (applied.method !== '全部' && request.method !== applied.method) return false
@@ -564,8 +448,8 @@ export default function SecurityRecoveryPage({ requests, setRequests, onApprove,
   }
 
   const exportRows = () => {
-    const columns = ['申请单号', '会员ID', '用户名', '找回类型', '申请来源', '核验方式', '核验条件', '原密保问题', '用户回复', '通用截图数量', '充值钱包地址', '充值截图数量', '提现钱包地址', '提现截图数量', '新密码提交状态', '提交时间', '审核状态', '审核人', '审核时间', '审核说明']
-    const values = filteredRequests.map((request) => [request.id, request.memberId, request.username, request.recoveryTypeLabel, request.source, request.method, request.condition, request.securityQuestion || '-', request.reply || '-', request.images.length, request.recharge.walletAddress || '-', request.recharge.images.length, request.withdrawal.walletAddress || '-', request.withdrawal.images.length, request.recoveryType === 'login-password' ? (request.passwordSubmitted ? '已安全提交（不可查看）' : '未提交') : '-', request.submittedAt, request.status, request.reviewer || '-', request.reviewedAt || '-', request.reviewRemark || '-'])
+    const columns = ['申请单号', '会员ID', '用户名', '找回类型', '申请来源', '核验方式', '核验条件', '充值会员提交地址', '充值历史模拟记录', '充值历史地址', '充值截图数量', '提现会员提交地址', '提现历史模拟记录', '提现历史地址', '提现截图数量', '新密码提交状态', '提交时间', '审核状态', '审核人', '审核时间', '审核说明']
+    const values = filteredRequests.map((request) => [request.id, request.memberId, request.username, request.recoveryTypeLabel, request.source, request.method, request.condition, request.recharge.walletAddress || '-', request.recharge.reference || '-', request.recharge.historyWalletAddress || '-', request.recharge.images.length, request.withdrawal.walletAddress || '-', request.withdrawal.reference || '-', request.withdrawal.historyWalletAddress || '-', request.withdrawal.images.length, request.recoveryType === 'login-password' ? (request.passwordSubmitted ? '已安全提交（不可查看）' : '未提交') : '-', request.submittedAt, request.status, request.reviewer || '-', request.reviewedAt || '-', request.reviewRemark || '-'])
     const csv = [columns, ...values].map((row) => row.map(quoteCsv).join(',')).join('\n')
     const url = URL.createObjectURL(new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8' }))
     const anchor = document.createElement('a')
@@ -589,12 +473,17 @@ export default function SecurityRecoveryPage({ requests, setRequests, onApprove,
 
   const approve = () => {
     const isPassword = approving.recoveryType === 'login-password'
+    const isGoogleAuth = approving.recoveryType === 'google-auth'
     const check = proofChecks[approving.id] || {}
-    if (isPassword && (!approving.passwordSubmitted || !check.recharge || !check.withdrawal)) {
-      notify('新密码已提交且充值、提现材料均核对一致后才可通过', 'error')
+    if (!evidenceComplete(approving.recharge) || !evidenceComplete(approving.withdrawal) || !check.recharge || !check.withdrawal) {
+      notify('充值、提现截图和对应地址均齐全且核对一致后才可通过', 'error')
       return
     }
-    const reviewRemark = isPassword ? '运营核对充值与提现材料一致，预提交的新登录密码已生效。' : '客服核验通过，会员密保已恢复为未设置状态。'
+    if (isPassword && !approving.passwordSubmitted) {
+      notify('该申请未完成新密码安全提交，不可通过', 'error')
+      return
+    }
+    const reviewRemark = isPassword ? '运营核对充值与提现材料一致，预提交的新登录密码已生效。' : isGoogleAuth ? '运营核对充值与提现材料一致，谷歌二次验证已重置为未绑定，会员需重新绑定。' : '客服核验通过，会员密保已恢复为未设置状态。'
     const updated = updateStatus(approving, {
       status: '审核通过',
       reviewer: 'admin1',
@@ -606,7 +495,7 @@ export default function SecurityRecoveryPage({ requests, setRequests, onApprove,
     setApproving(null)
     setDetail((current) => current?.id === updated.id ? normalizeRequest(updated, 0) : current)
     if (typeof onApprove === 'function') onApprove(normalizeRequest(updated, 0))
-    notify(isPassword ? `申请 ${updated.id} 已审核通过，预提交的新登录密码已生效` : `申请 ${updated.id} 已审核通过，会员密保已还原为未设置状态`)
+    notify(isPassword ? `申请 ${updated.id} 已审核通过，预提交的新登录密码已生效` : isGoogleAuth ? `申请 ${updated.id} 已审核通过，谷歌二次验证已重置为未绑定` : `申请 ${updated.id} 已审核通过，会员密保已还原为未设置状态`)
   }
 
   const reject = (reason) => {
@@ -632,11 +521,12 @@ export default function SecurityRecoveryPage({ requests, setRequests, onApprove,
   }
 
   const attemptApprove = (request) => {
-    if (request.recoveryType !== 'login-password') {
-      setApproving(request)
+    if (!evidenceComplete(request.recharge) || !evidenceComplete(request.withdrawal)) {
+      notify('充值、提现两组资料都必须包含截图和对应钱包地址', 'error')
+      openProof(request)
       return
     }
-    if (!request.passwordSubmitted) {
+    if (request.recoveryType === 'login-password' && !request.passwordSubmitted) {
       notify('该申请未完成新密码安全提交，不可通过', 'error')
       openProof(request)
       return
@@ -660,7 +550,7 @@ export default function SecurityRecoveryPage({ requests, setRequests, onApprove,
     <div className="security-recovery-page">
       <section className="sr-intro">
         <div className="sr-intro-icon"><UserRoundCheck size={23} /></div>
-        <div><b>会员找回审核</b><p>统一审核密保找回与登录密码资料找回；密码类申请需同时核对充值、提现截图及对应钱包地址，后台不可查看新密码明文。</p></div>
+        <div><b>会员找回审核</b><p>密保找回、登录密码找回与谷歌二次验证找回统一核对最近充值、提现截图及对应钱包地址，两组资料均一致后才可通过；后台不展示密码、密保答案或验证密钥。</p></div>
         <button type="button" className="btn btn-default" onClick={() => runRefresh()}>{loading ? <LoaderCircle className="sr-spin" size={14} /> : <RefreshCw size={14} />}刷新</button>
       </section>
 
@@ -685,7 +575,7 @@ export default function SecurityRecoveryPage({ requests, setRequests, onApprove,
 
       <section className="panel sr-table-panel">
         <div className="sr-table-toolbar">
-          <div><b>会员找回审核申请</b><span>密保找回核对原材料；登录密码找回须同时核对充值与提现材料</span></div>
+          <div><b>会员找回审核申请</b><span>三种找回均须同时核对充值、提现截图及对应钱包地址</span></div>
           <div><button type="button" className="btn btn-default" onClick={exportRows}><Download size={14} />导出</button><span>共 <b>{filteredRequests.length}</b> 条</span></div>
         </div>
         <RecoveryTable rows={pageRows} loading={loading} onView={(request) => { setDetailTab('申请信息'); setDetail(request) }} onPreview={openProof} onApprove={attemptApprove} onReject={setRejecting} />
@@ -699,7 +589,7 @@ export default function SecurityRecoveryPage({ requests, setRequests, onApprove,
       </section>
 
       {detail && <RequestDetailModal key={`${detail.id}-${detail.status}-${detailTab}`} request={detail} initialTab={detailTab} proofCheck={proofChecks[detail.id] || {}} onProofCheckChange={(key, checked) => updateProofCheck(detail.id, key, checked)} onApprove={attemptApprove} onClose={() => setDetail(null)} notify={notify} />}
-      {approving && <ConfirmModal request={approving} canConfirm={approving.recoveryType !== 'login-password' || Boolean(approving.passwordSubmitted && proofChecks[approving.id]?.recharge && proofChecks[approving.id]?.withdrawal)} onBlocked={() => notify('请先完成充值和提现两项材料核对', 'error')} onClose={() => setApproving(null)} onConfirm={approve} />}
+      {approving && <ConfirmModal request={approving} canConfirm={Boolean(evidenceComplete(approving.recharge) && evidenceComplete(approving.withdrawal) && proofChecks[approving.id]?.recharge && proofChecks[approving.id]?.withdrawal && (approving.recoveryType !== 'login-password' || approving.passwordSubmitted))} onBlocked={() => notify('请先完成充值和提现两项材料核对', 'error')} onClose={() => setApproving(null)} onConfirm={approve} />}
       {rejecting && <RejectModal request={rejecting} onClose={() => setRejecting(null)} onConfirm={reject} />}
     </div>
   )

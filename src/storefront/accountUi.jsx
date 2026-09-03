@@ -272,7 +272,7 @@ export function ConfirmModal({ open, title, content, confirmText = '确定', can
   )
 }
 
-export function GoogleVerificationModal({ open, purpose = '敏感操作', onClose, onVerified }) {
+export function GoogleVerificationModal({ open, purpose = '敏感操作', onClose, onVerified, onRecover }) {
   const [mode, setMode] = useState('code')
   const [value, setValue] = useState('')
   const [error, setError] = useState('')
@@ -312,6 +312,7 @@ export function GoogleVerificationModal({ open, purpose = '敏感操作', onClos
       <button className="sfa-text-button" type="button" onClick={() => { setMode(mode === 'code' ? 'recovery' : 'code'); setValue(''); setError('') }}>
         {mode === 'code' ? '无法使用验证器？使用恢复码' : '返回使用谷歌验证码'}
       </button>
+      {onRecover ? <button className="sfa-text-button" type="button" onClick={onRecover}>验证码和恢复码均无法使用？申请找回</button> : null}
     </Modal>
   )
 }

@@ -40,12 +40,21 @@ export function SecurityCenterPage(props) {
   const actions = useSfaActions(props)
   const [logout, setLogout] = useState(false)
   const securityConfigured = Boolean(props.securityProfile?.configured)
-  const securityMenu = useMemo(() => SECURITY_MENU.map((item) => item.id === 'question' ? {
-    ...item,
-    title: securityConfigured ? '更换密保' : '设置密保',
-    subtitle: securityConfigured ? '验证原密保后可设置新的问题和答案' : '首次设置密保问题、答案和提示',
-    status: securityConfigured ? '已设置' : '未设置',
-  } : item), [securityConfigured])
+  const googleBound = props.googleBound ?? true
+  const securityMenu = useMemo(() => SECURITY_MENU.map((item) => {
+    if (item.id === 'question') return {
+      ...item,
+      title: securityConfigured ? '更换密保' : '设置密保',
+      subtitle: securityConfigured ? '验证原密保后可设置新的问题和答案' : '首次设置密保问题、答案和提示',
+      status: securityConfigured ? '已设置' : '未设置',
+    }
+    if (item.id === 'google') return {
+      ...item,
+      subtitle: googleBound ? '查看恢复码、重新绑定或发起找回' : '当前未绑定，完成绑定后可启用二次验证',
+      status: googleBound ? '已绑定' : '未绑定',
+    }
+    return item
+  }), [googleBound, securityConfigured])
 
   return (
     <PageShell title="安全中心" onBack={actions.back} message={actions.localMessage}>
@@ -356,13 +365,49 @@ function OnboardingPage(props) {
 
 function GoogleAuthenticatorPage(props) {
   const actions = useSfaActions(props)
-  const [bound, setBound] = useState(Boolean(props?.initialBound))
+  const initialBound = props.googleBound ?? props.initialBound ?? true
+  const openRecoveryFromLogin = String(props.path || '').includes('recovery=1')
+  const [bound, setBound] = useState(Boolean(initialBound))
   const [step, setStep] = useState(bound ? 'manage' : 'intro')
   const [fund, setFund] = useState('')
   const [code, setCode] = useState('')
   const [saved, setSaved] = useState(false)
   const [unbinding, setUnbinding] = useState(false)
+  const [recoveryOpen, setRecoveryOpen] = useState(false)
+  const memberId = String(props.memberId || '133')
+  const username = String(props.username || 'evan777')
+  const securityProfile = props.securityProfile || {}
+  const directSecurity = useMemo(() => ({
+    question: securityProfile.configured ? securityProfile.question : '',
+    tip: securityProfile.configured ? securityProfile.tip : '',
+    answer: securityProfile.configured ? securityProfile.answer : '',
+  }), [securityProfile.answer, securityProfile.configured, securityProfile.question, securityProfile.tip])
+  const latestGoogleRequest = useMemo(() => (props.recoveryRequests || []).find((request) => (
+    request.recoveryType === 'google-auth'
+    && (String(request.memberId || '') === memberId || String(request.username || '').toLowerCase() === username.toLowerCase())
+  )), [memberId, props.recoveryRequests, username])
   const recoveryCodes = Array.from({ length: 6 }, (_, index) => `恢复码 ${String(index + 1).padStart(2, '0')}（演示）`)
+
+  useEffect(() => {
+    if (typeof props.googleBound !== 'boolean') return
+    setBound(props.googleBound)
+    setStep(props.googleBound ? 'manage' : 'intro')
+  }, [props.googleBound])
+
+  useEffect(() => {
+    if (openRecoveryFromLogin && bound) setRecoveryOpen(true)
+  }, [bound, openRecoveryFromLogin])
+
+  useEffect(() => {
+    if (latestGoogleRequest?.status !== '审核通过') return
+    setBound(false)
+    setStep('intro')
+  }, [latestGoogleRequest?.status])
+
+  const updateBound = (nextBound) => {
+    setBound(nextBound)
+    props.setGoogleBound?.(nextBound)
+  }
 
   const start = () => {
     if (!/^\d{6}$/.test(fund)) return actions.notify('请输入6位资金密码')
@@ -374,20 +419,64 @@ function GoogleAuthenticatorPage(props) {
   }
   const complete = () => {
     if (!saved) return actions.notify('请先确认已安全保存恢复码')
-    setBound(true)
+    updateBound(true)
     setStep('manage')
     setFund('')
     setCode('')
     actions.notify('谷歌验证器已绑定', 'success')
   }
 
+  const directUnbind = () => {
+    setRecoveryOpen(false)
+    updateBound(false)
+    setStep('intro')
+    setFund('')
+    actions.notify('密保验证通过，谷歌二次验证已解绑', 'success')
+  }
+
+  const submitRecovery = (request) => {
+    const accepted = props.onSubmitRecovery?.(request)
+    if (accepted === false) {
+      actions.notify('该会员已有待审核申请，请勿重复提交')
+      return false
+    }
+    setRecoveryOpen(false)
+    actions.notify(`解绑申请 ${request.requestNo} 已提交，请等待运营审核`, 'success')
+    return true
+  }
+
+  const recoveryStatusTone = latestGoogleRequest?.status === '审核通过'
+    ? 'success'
+    : latestGoogleRequest?.status === '已驳回' ? 'danger' : 'warning'
+
   return (
     <PageShell title="谷歌验证器" onBack={actions.back} message={actions.localMessage}>
+      <StorefrontRequirementEntry path="/front/pages/security/google-authenticator" />
+      {latestGoogleRequest ? <Card className="sfa-google-recovery-status"><div><small>最近解绑/重置申请</small><strong>{latestGoogleRequest.requestNo || latestGoogleRequest.id}</strong></div><Badge tone={recoveryStatusTone}>{latestGoogleRequest.status || '待审核'}</Badge>{latestGoogleRequest.status === '已驳回' ? <p>驳回说明：{latestGoogleRequest.rejectReason || latestGoogleRequest.reviewRemark || '资料核验未通过，请重新提交。'}</p> : <p>{latestGoogleRequest.status === '审核通过' ? '运营审核已通过，谷歌二次验证已恢复为未绑定状态。' : '运营正在核对充值和提现两组资料，请勿重复申请。'}</p>}</Card> : null}
       {step === 'intro' ? <><Card className="sfa-security-intro"><div className="sfa-security-emblem"><ShieldCheck size={31} /></div><h2>绑定谷歌验证器</h2><p>绑定后，登录与敏感资金操作都需要输入动态验证码。</p></Card><Card><PasswordField label="资金密码" value={fund} onChange={(value) => setFund(value.replace(/\D/g, '').slice(0, 6))} placeholder="绑定前请先输入6位资金密码" /><PrimaryButton onClick={start}>开始绑定</PrimaryButton></Card></> : null}
       {step === 'scan' ? <><Card className="sfa-google-setup"><SectionTitle>扫描二维码并确认</SectionTitle><p>使用谷歌验证器扫描二维码，或复制密钥手工添加账户。</p><QrPlaceholder label="G6哈希演示" /><CopyLine label="手工输入密钥" value="•••• •••• ••••" onCopy={() => actions.copy('演示密钥（不可用于真实验证）', '演示密钥')} /><Field label="谷歌验证码" value={code} onChange={(value) => setCode(value.replace(/\D/g, '').slice(0, 6))} placeholder="请输入6位演示验证码" /><PrimaryButton onClick={confirmCode}>确认绑定</PrimaryButton><GhostButton onClick={() => setStep('intro')}>取消</GhostButton></Card></> : null}
       {step === 'recovery' ? <Card><SectionTitle>请立即保存恢复码</SectionTitle><Hint tone="warning">每个恢复码只能使用一次，离开此页后将不再显示。</Hint><div className="sfa-recovery-grid">{recoveryCodes.map((item) => <code key={item}>{item}</code>)}</div><GhostButton onClick={() => actions.copy(recoveryCodes.join('\n'), '全部恢复码')}>复制全部恢复码</GhostButton><label className="sfa-check-row"><input type="checkbox" checked={saved} onChange={(event) => setSaved(event.target.checked)} /><span>我已将恢复码保存在安全位置</span></label><PrimaryButton onClick={complete}>完成</PrimaryButton></Card> : null}
-      {step === 'manage' ? <><Card className="sfa-security-banner"><div className="sfa-security-emblem"><ShieldCheck size={31} /></div><div><strong>谷歌验证器已绑定</strong><small>账户动态验证保护已开启</small></div><Badge tone="success">已绑定</Badge></Card><Card><PasswordField label="管理前请输入6位资金密码" value={fund} onChange={(value) => setFund(value.replace(/\D/g, '').slice(0, 6))} /></Card><Card className="sfa-action-list"><ActionRow title="重新生成恢复码" subtitle="旧恢复码将立即失效" onClick={() => /^\d{6}$/.test(fund) ? setStep('recovery') : actions.notify('请输入6位资金密码')} /><ActionRow title="重新绑定验证器" subtitle="更换手机或验证器应用" onClick={() => /^\d{6}$/.test(fund) ? setStep('scan') : actions.notify('请输入6位资金密码')} /><ActionRow title="解绑谷歌验证器" subtitle="解绑后账户保护将降低" danger onClick={() => /^\d{6}$/.test(fund) ? setUnbinding(true) : actions.notify('请输入6位资金密码')} /></Card><Hint>验证码、密钥与恢复码请勿发送给任何人。</Hint></> : null}
-      <ConfirmModal open={unbinding} title="确认解绑谷歌验证器？" content="解绑后登录与敏感操作将失去动态验证码保护。" confirmText="确认解绑" danger onCancel={() => setUnbinding(false)} onConfirm={() => { setUnbinding(false); setBound(false); setStep('intro'); setFund(''); actions.notify('解绑成功，请重新登录', 'success') }} />
+      {step === 'manage' ? <><Card className="sfa-security-banner"><div className="sfa-security-emblem"><ShieldCheck size={31} /></div><div><strong>谷歌验证器已绑定</strong><small>账户动态验证保护已开启</small></div><Badge tone="success">已绑定</Badge></Card><button type="button" className="sfa-google-recovery-entry" onClick={() => setRecoveryOpen(true)}><span><b>无法使用验证器？</b><small>无需资金密码，可通过密保或交易资料申请解绑/重置</small></span><strong>申请解绑/重置</strong></button><Card><PasswordField label="管理前请输入6位资金密码" value={fund} onChange={(value) => setFund(value.replace(/\D/g, '').slice(0, 6))} /></Card><Card className="sfa-action-list"><ActionRow title="重新生成恢复码" subtitle="旧恢复码将立即失效" onClick={() => /^\d{6}$/.test(fund) ? setStep('recovery') : actions.notify('请输入6位资金密码')} /><ActionRow title="重新绑定验证器" subtitle="更换手机或验证器应用" onClick={() => /^\d{6}$/.test(fund) ? setStep('scan') : actions.notify('请输入6位资金密码')} /><ActionRow title="解绑谷歌验证器" subtitle="解绑后账户保护将降低" danger onClick={() => /^\d{6}$/.test(fund) ? setUnbinding(true) : actions.notify('请输入6位资金密码')} /></Card><Hint>验证码、密钥与恢复码请勿发送给任何人。</Hint></> : null}
+      <ConfirmModal open={unbinding} title="确认解绑谷歌验证器？" content="解绑后登录与敏感操作将失去动态验证码保护。" confirmText="确认解绑" danger onCancel={() => setUnbinding(false)} onConfirm={() => { setUnbinding(false); updateBound(false); setStep('intro'); setFund(''); actions.notify('解绑成功，请重新登录', 'success') }} />
+      <SecurityRecoveryModal
+        open={recoveryOpen}
+        onClose={() => setRecoveryOpen(false)}
+        onSubmit={submitRecovery}
+        onDirectVerified={directUnbind}
+        recoveryRequests={props.recoveryRequests}
+        sourcePage="谷歌验证器 · 申请解绑/重置"
+        currentQuestion={securityProfile.question}
+        memberId={memberId}
+        username={username}
+        title="找回谷歌二次验证"
+        recoveryType="google-auth"
+        recoveryTypeLabel="谷歌二次验证找回"
+        headingTitle="提交交易资料申请解绑"
+        completionText="运营核对充值和提现两组资料后，审核通过会将谷歌二次验证恢复为未绑定状态。"
+        transactionActionLabel="提交解绑申请"
+        directActionLabel="验证并解绑"
+        directSecurity={directSecurity}
+      />
     </PageShell>
   )
 }

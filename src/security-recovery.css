@@ -543,6 +543,12 @@
   background: #f6f0ff;
 }
 
+.sr-recovery-type.google {
+  border-color: #f0d28d;
+  color: #94620b;
+  background: #fff8e8;
+}
+
 .sr-password-submitted {
   display: inline-flex;
   align-items: center;

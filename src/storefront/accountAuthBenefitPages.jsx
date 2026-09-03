@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Award, CheckCircle2, Gift, ImagePlus, ShieldCheck, Sparkles, Trash2, Trophy } from 'lucide-react'
 import { BENEFITS, LUCKY5_REWARDS, RANK_REWARDS, STREAK_REWARDS } from './accountData'
+import StorefrontRequirementEntry from './StorefrontRequirementEntry'
 import {
   Card,
   CopyLine,
@@ -77,6 +78,7 @@ function LoginPage(props) {
 
   return (
     <AuthShell title="登录" subtitle="欢迎回来，请登录您的账户" actions={actions} footer={<p>G6哈希 © 版权所有 侵权必究</p>}>
+      <StorefrontRequirementEntry path="/front/pages/login/login" />
       <Card className="sfa-auth-card">
         <Field label="账号" value={username} onChange={(value) => setUsername(value.replace(/[^A-Za-z0-9]/g, '').slice(0, 16))} placeholder="请输入用户名" />
         <PasswordField label="密码" value={password} onChange={setPassword} placeholder="请输入密码" />
@@ -89,7 +91,7 @@ function LoginPage(props) {
       <Modal open={recoverAccount} title="找回账号" onClose={() => { setRecoverAccount(false); setFound(false) }} footer={found ? <div className="sfa-modal-actions"><GhostButton onClick={() => actions.copy('G6DEMO88', '账号')}>复制账号</GhostButton><PrimaryButton onClick={() => { setUsername('G6DEMO88'); setRecoverAccount(false); setFound(false) }}>去登录</PrimaryButton></div> : <PrimaryButton onClick={findAccount}>查询</PrimaryButton>}>
         {found ? <CopyLine label="已找回账号" value="G6DEMO88" onCopy={() => actions.copy('G6DEMO88', '账号')} /> : <Field label="请输入已绑定的TRC20提现地址" value={address} onChange={setAddress} placeholder="请输入TRC20地址" />}
       </Modal>
-      <GoogleVerificationModal open={google} purpose="谷歌登录验证" onClose={() => setGoogle(false)} onVerified={() => { setGoogle(false); actions.notify('登录成功', 'success'); actions.go('/pages/index/index') }} />
+      <GoogleVerificationModal open={google} purpose="谷歌登录验证" onClose={() => setGoogle(false)} onVerified={() => { setGoogle(false); actions.notify('登录成功', 'success'); actions.go('/pages/index/index') }} onRecover={() => { setGoogle(false); actions.go('/pages/security/google-authenticator?recovery=1') }} />
     </AuthShell>
   )
 }
@@ -129,7 +131,6 @@ function RegisterPage(props) {
 function RecoverPage(props) {
   const actions = useSfaActions(props)
   const [method, setMethod] = useState('question')
-  const [questionVerified, setQuestionVerified] = useState(false)
   const [username, setUsername] = useState('')
   const [answer, setAnswer] = useState('')
   const [password, setPassword] = useState('')
@@ -142,6 +143,8 @@ function RecoverPage(props) {
 
   const normalizedUsername = username.trim()
   const memberId = normalizedUsername.toLowerCase() === 'evan777' ? '133' : normalizedUsername
+  const recoveryQuestion = props.securityProfile?.question || '15.您的出生地是?'
+  const recoveryHint = props.securityProfile?.tip || '户口所在地'
   const latestAccountRequest = useMemo(() => (props.recoveryRequests || []).find((request) => (
     request.recoveryType === 'login-password'
     && (String(request.memberId || '') === memberId || String(request.username || '').toLowerCase() === normalizedUsername.toLowerCase())
@@ -167,16 +170,12 @@ function RecoverPage(props) {
     return true
   }
 
-  const verifyQuestion = () => {
+  const resetByQuestion = () => {
     if (!validateUsername()) return
     if (!answer.trim()) return actions.notify('请输入密保答案')
-    setQuestionVerified(true)
-    actions.notify('密保验证通过，请设置新密码', 'success')
-  }
-
-  const resetByQuestion = () => {
+    if (props.securityProfile?.answer && answer.trim() !== props.securityProfile.answer) return actions.notify('密保答案不正确')
     if (!validatePassword()) return
-    actions.notify('密码重置成功，请使用新密码登录', 'success')
+    actions.notify('密保验证通过，密码重置成功', 'success')
     actions.go('/pages/login/login')
   }
 
@@ -272,6 +271,7 @@ function RecoverPage(props) {
     }
     return (
       <PageShell title="找回密码" onBack={actions.back} message={actions.localMessage} className="sfa-password-recovery-page" bottom={<PrimaryButton onClick={rejected ? retry : () => actions.go('/pages/login/login')}>{rejected ? '重新申请' : '返回登录'}</PrimaryButton>}>
+        <StorefrontRequirementEntry path="/front/pages/login/recover-password" />
         <Card className="sfa-password-recovery-result">
           <span>{approved ? <CheckCircle2 size={31} /> : <ShieldCheck size={31} />}</span>
           <h2>{approved ? '找回已完成' : rejected ? '申请未通过' : '申请已提交'}</h2>
@@ -287,26 +287,32 @@ function RecoverPage(props) {
 
   const changeMethod = (value) => {
     setMethod(value)
-    setQuestionVerified(false)
     setAnswer('')
     setPassword('')
     setConfirm('')
   }
 
   const bottomAction = method === 'question'
-    ? <PrimaryButton onClick={questionVerified ? resetByQuestion : verifyQuestion}>{questionVerified ? '确认修改密码' : '验证密保'}</PrimaryButton>
+    ? <PrimaryButton onClick={resetByQuestion}>确认找回密码</PrimaryButton>
     : <PrimaryButton onClick={submitTransactionRecovery}>提交审核</PrimaryButton>
 
   return (
-    <PageShell title="找回密码" subtitle={method === 'question' ? '密保验证通过后可直接修改' : '交易资料需经运营审核'} onBack={actions.back} message={actions.localMessage} className="sfa-password-recovery-page" bottom={bottomAction}>
+    <PageShell title="找回密码" subtitle={method === 'question' ? '密保答案和新密码一次提交' : '交易资料需经运营审核'} onBack={actions.back} message={actions.localMessage} className="sfa-password-recovery-page" bottom={bottomAction}>
+      <StorefrontRequirementEntry path="/front/pages/login/recover-password" />
       <Card className="sfa-password-recovery-account">
-        <Field label="会员账号" value={username} disabled={questionVerified} onChange={(value) => setUsername(value.replace(/[^A-Za-z0-9]/g, '').slice(0, 16))} placeholder="请输入6-16位会员账号" />
+        <Field label="会员账号" value={username} onChange={(value) => setUsername(value.replace(/[^A-Za-z0-9]/g, '').slice(0, 16))} placeholder="请输入6-16位会员账号" />
         {method === 'transaction' && latestAccountRequest && <button type="button" className="sfa-password-recovery-latest" onClick={() => setSubmittedRequest(latestAccountRequest)}><span><small>最近申请</small><b>{latestAccountRequest.requestNo || latestAccountRequest.id}</b></span><strong>{latestAccountRequest.status || '待审核'} · 查看</strong></button>}
       </Card>
-      <Segmented items={[{ value: 'question', label: '密保找回' }, { value: 'transaction', label: '交易资料找回' }]} value={method} onChange={changeMethod} />
+      <Segmented items={[{ value: 'question', label: '通过密保找回' }, { value: 'transaction', label: '交易资料找回' }]} value={method} onChange={changeMethod} />
       {method === 'question' ? (
         <Card className="sfa-password-recovery-card">
-          {!questionVerified ? <><SectionTitle>回答密保问题</SectionTitle><p className="sfa-question-card">15.您的出生地是?</p><small className="sfa-field-tip">密保提示：户口所在地</small><Field label="密保答案" value={answer} onChange={setAnswer} placeholder="请输入密保答案" /></> : <><div className="sfa-password-recovery-verified"><CheckCircle2 size={20} /><span><b>密保验证通过</b><small>请设置新的登录密码</small></span></div><PasswordField label="新密码" value={password} onChange={setPassword} placeholder="请输入新密码（6-20位）" /><PasswordField label="确认新密码" value={confirm} onChange={setConfirm} placeholder="请再次输入新密码" /></>}
+          <SectionTitle>密保验证与新密码</SectionTitle>
+          <p className="sfa-question-card">{recoveryQuestion}</p>
+          <small className="sfa-field-tip">密保提示：{recoveryHint}</small>
+          <Field label="密保答案" value={answer} onChange={setAnswer} placeholder="请输入密保答案" />
+          <PasswordField label="新密码" value={password} onChange={setPassword} placeholder="请输入新密码（6-20位）" />
+          <PasswordField label="确认新密码" value={confirm} onChange={setConfirm} placeholder="请再次输入新密码" />
+          <small className="sfa-field-tip">密保答案验证与新密码修改一次提交，验证通过后立即完成找回。</small>
         </Card>
       ) : (
         <>
