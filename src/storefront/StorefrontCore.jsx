@@ -68,9 +68,67 @@ import {
   walletCurrencies,
   walletVendors,
 } from './coreData'
+import { getModuleRequirement } from '../requirements'
 import './core.css'
 
 const noop = () => {}
+const userPageRequirement = getModuleRequirement('/front/pages/user/user')
+
+function splitSecurityRule(rule) {
+  const separatorIndex = rule.indexOf('：')
+  const title = separatorIndex >= 0 ? rule.slice(0, separatorIndex) : '规则'
+  const content = separatorIndex >= 0 ? rule.slice(separatorIndex + 1) : rule
+  const clauses = content.split('；').flatMap((part) => (
+    part.split('，或').map((clause, index) => `${index > 0 ? '或 ' : ''}${clause}`)
+  )).map((clause) => clause.replace(/[。；]+$/g, '').trim()).filter(Boolean)
+  return { title, clauses }
+}
+
+function SecurityRuleCards({ rules = [] }) {
+  return (
+    <div className="sf-user-rule-list">
+      {rules.map((rule, ruleIndex) => {
+        const { title, clauses } = splitSecurityRule(rule)
+        return (
+          <article className="sf-user-rule-card" key={title}>
+            <header><span>{String(ruleIndex + 1).padStart(2, '0')}</span><h4>{title}</h4></header>
+            <div className="sf-user-rule-card__body">
+              {clauses.map((clause, clauseIndex) => {
+                if (clause.includes(' AND ')) {
+                  return (
+                    <div className="sf-user-rule-and" key={`${title}-${clauseIndex}`}>
+                      {clause.split(' AND ').map((condition, conditionIndex, conditions) => (
+                        <React.Fragment key={condition}>
+                          <span>{condition}</span>
+                          {conditionIndex < conditions.length - 1 && <b>AND</b>}
+                        </React.Fragment>
+                      ))}
+                    </div>
+                  )
+                }
+                const isAlternative = clause.startsWith('或 ')
+                const clauseText = isAlternative ? clause.slice(2) : clause
+                const equalIndex = clauseText.indexOf('=')
+                if (equalIndex >= 0) {
+                  return (
+                    <p className="sf-user-rule-equation" key={`${title}-${clauseIndex}`}>
+                      <span>{clauseText.slice(0, equalIndex)}</span><b>=</b><em>{clauseText.slice(equalIndex + 1)}</em>
+                    </p>
+                  )
+                }
+                return (
+                  <p className={`sf-user-rule-statement ${isAlternative ? 'is-alternative' : ''}`} key={`${title}-${clauseIndex}`}>
+                    {isAlternative && <b>或</b>}<span>{clauseText}</span>
+                  </p>
+                )
+              })}
+            </div>
+          </article>
+        )
+      })}
+    </div>
+  )
+}
 
 function useFeedback(onToast) {
   const [toast, setToast] = useState(null)
@@ -496,6 +554,7 @@ export function UserPage({ onNavigate, onToast, userName = 'demo001', userId = '
   const [showBalance, setShowBalance] = useState(true)
   const [serviceOpen, setServiceOpen] = useState(false)
   const [addressOpen, setAddressOpen] = useState(false)
+  const [changeNoteOpen, setChangeNoteOpen] = useState(false)
   const [address, setAddress] = useState('')
 
   const handleAction = (item) => {
@@ -507,6 +566,19 @@ export function UserPage({ onNavigate, onToast, userName = 'demo001', userId = '
   return (
     <div className="sf-page sf-user-page sf-page--with-bottom">
       <section className="sf-user-hero">
+        {userPageRequirement && (
+          <button
+            type="button"
+            className="sf-user-change-note"
+            aria-haspopup="dialog"
+            onClick={() => setChangeNoteOpen(true)}
+          >
+            <span className="sf-user-change-note__icon"><BookOpen size={16} /></span>
+            <span className="sf-user-change-note__title">本次修改说明 <em>({userPageRequirement.changeType})</em></span>
+            <small>最近修改 {userPageRequirement.completedAt}</small>
+            <ChevronRight size={16} />
+          </button>
+        )}
         <div className="sf-user-profile">
           <button type="button" className="sf-user-avatar" onClick={() => notify('头像更换为演示功能')}><img src={assetPath('default-avatar.png')} alt="用户头像" /><span>✎</span></button>
           <button type="button" className="sf-user-identity" onClick={() => notify(`账号 ${userName}，ID ${userId}`)}>
@@ -550,6 +622,46 @@ export function UserPage({ onNavigate, onToast, userName = 'demo001', userId = '
       </main>
 
       <BottomNav active="user" onNavigate={(path) => onNavigate?.(path)} />
+      <BottomSheet
+        open={changeNoteOpen}
+        title="本次修改说明"
+        onClose={() => setChangeNoteOpen(false)}
+        className="sf-user-change-sheet"
+        bodyClassName="sf-user-change-sheet__body"
+        footer={<button type="button" className="sf-primary-button" onClick={() => setChangeNoteOpen(false)}>我知道了</button>}
+      >
+        {userPageRequirement && (
+          <div className="sf-user-change-content">
+            <div className="sf-user-change-summary">
+              <span><BookOpen size={18} /></span>
+              <div><b>{userPageRequirement.moduleName}</b><small>({userPageRequirement.changeType}) · {userPageRequirement.completedAt}</small></div>
+            </div>
+            <p className="sf-user-change-lead">{userPageRequirement.requirement}</p>
+            <section>
+              <h3>本次修改</h3>
+              <ul>{userPageRequirement.changes.map((item) => <li key={item}>{item}</li>)}</ul>
+            </section>
+            <section>
+              <h3>账号与安全规则</h3>
+              <SecurityRuleCards rules={userPageRequirement.fields} />
+            </section>
+            <section>
+              <h3>操作与状态逻辑</h3>
+              <p>{userPageRequirement.operationLogic}</p>
+              <p>{userPageRequirement.stateLogic}</p>
+            </section>
+            <section>
+              <h3>绑定地址充值找回</h3>
+              <p>{userPageRequirement.amountLogic}</p>
+            </section>
+            <section>
+              <h3>验收说明</h3>
+              <ul>{userPageRequirement.acceptance.map((item) => <li key={item}>{item}</li>)}</ul>
+            </section>
+            <p className="sf-user-change-warning">本页及全部安全找回仅为前端演示，不连接真实账号、钱包、支付、谷歌验证器或链上网络。</p>
+          </div>
+        )}
+      </BottomSheet>
       <BottomSheet open={serviceOpen} title="联系客服" onClose={() => setServiceOpen(false)}>
         <ServicePage embedded userName={userName} onToast={onToast} />
       </BottomSheet>

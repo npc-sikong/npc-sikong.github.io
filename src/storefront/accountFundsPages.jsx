@@ -175,7 +175,7 @@ export function WithdrawPage(props) {
         <SelectField label="提现方式" value={method.label} onClick={() => setMethodSheet(true)} />
         <SelectField label="收款账户" value={method.account} onClick={() => setAccountSheet(true)} />
         <Field label="提现金额" value={amount} onChange={setAmount} type="number" suffix={method.currency} right={<button type="button" onClick={() => setAmount(String(balance))}>全部提现</button>} />
-        <PasswordField label="资金密码" value={password} onChange={(value) => setPassword(value.replace(/\D/g, '').slice(0, 6))} placeholder="请输入6位资金密码" right={<button type="button" onClick={() => actions.go('/pages/security/recharge-password')}>忘记密码?</button>} />
+        <PasswordField label="资金密码" value={password} onChange={(value) => setPassword(value.replace(/\D/g, '').slice(0, 6))} placeholder="请输入6位资金密码" right={<button type="button" onClick={() => actions.go('/pages/security/recharge-password?recover=1')}>忘记密码?</button>} />
       </Card>
       <Hint>{source === 'commission' ? '佣金提现无需完成投注流水，提交后按正常审核流程处理。' : '当前没有未完成的提现流水要求。'}</Hint>
       <SelectSheet open={methodSheet} title="选择提现方式" options={WITHDRAW_METHODS.map((item) => ({ value: item.id, label: item.label, note: `最低 ${item.min} ${item.currency}` }))} value={methodId} onClose={() => setMethodSheet(false)} onSelect={(value) => { setMethodId(value); setAmount(''); setMethodSheet(false) }} />
@@ -217,7 +217,7 @@ export function CommissionTransferPage(props) {
       <Card>
         <SummaryGrid items={[{ label: `当前可转游戏${currency}余额`, value: current.commission.toFixed(2) }, { label: '转入后需完成流水', value: `${amountValue(amount).toFixed(2)} ${currency}` }]} />
         <Field label="转入数量" value={amount} onChange={setAmount} type="number" suffix={currency} right={<button type="button" onClick={() => setAmount(String(current.commission))}>全部转为游戏余额</button>} />
-        <PasswordField label="资金密码" value={password} onChange={(value) => setPassword(value.replace(/\D/g, '').slice(0, 6))} placeholder="请输入资金密码" right={<button type="button" onClick={() => actions.go('/pages/security/recharge-password')}>忘记密码？</button>} />
+        <PasswordField label="资金密码" value={password} onChange={(value) => setPassword(value.replace(/\D/g, '').slice(0, 6))} placeholder="请输入资金密码" right={<button type="button" onClick={() => actions.go('/pages/security/recharge-password?recover=1')}>忘记密码？</button>} />
       </Card>
       <Hint tone="warning">转入普通余额后，本次金额需完成 1 倍有效流水方可提取。</Hint>
       <GoogleVerificationModal open={google} purpose="佣金转余额" onClose={() => setGoogle(false)} onVerified={() => { setGoogle(false); setAmount(''); setPassword(''); actions.notify('转账成功，流水要求已生成', 'success') }} />

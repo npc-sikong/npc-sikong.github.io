@@ -127,7 +127,7 @@ export function CurrencyTabs({ currencies, value, onChange, balanceKey = 'balanc
   )
 }
 
-export function Field({ label, value, onChange, placeholder = '请输入', type = 'text', suffix, right, disabled = false, textarea = false, maxLength }) {
+export function Field({ label, value, onChange, placeholder = '请输入', type = 'text', suffix, right, disabled = false, textarea = false, maxLength, name, autoComplete = 'off', inputMode }) {
   const Input = textarea ? 'textarea' : 'input'
   return (
     <label className="sfa-field">
@@ -136,7 +136,9 @@ export function Field({ label, value, onChange, placeholder = '请输入', type 
         <Input
           value={value}
           type={textarea ? undefined : type}
-          autoComplete="off"
+          name={name}
+          autoComplete={autoComplete}
+          inputMode={inputMode}
           disabled={disabled}
           placeholder={placeholder}
           maxLength={maxLength}
@@ -312,7 +314,7 @@ export function GoogleVerificationModal({ open, purpose = '敏感操作', onClos
       <button className="sfa-text-button" type="button" onClick={() => { setMode(mode === 'code' ? 'recovery' : 'code'); setValue(''); setError('') }}>
         {mode === 'code' ? '无法使用验证器？使用恢复码' : '返回使用谷歌验证码'}
       </button>
-      {onRecover ? <button className="sfa-text-button" type="button" onClick={onRecover}>验证码和恢复码均无法使用？申请找回</button> : null}
+      {onRecover ? <button className="sfa-text-button" type="button" onClick={onRecover}>验证码和恢复码均无法使用？前往解绑谷歌验证</button> : null}
     </Modal>
   )
 }
