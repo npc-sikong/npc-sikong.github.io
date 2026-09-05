@@ -1,6 +1,7 @@
+import { useDemoSecurity } from './DemoSecurityContext'
 import { useEffect, useRef, useState } from 'react'
 import { CheckCircle2, Copy, ShieldCheck } from 'lucide-react'
-import { Hint, Modal, PrimaryButton, QrPlaceholder } from './accountUi'
+import { Hint, Modal, PrimaryButton, QrPlaceholder, Field } from './accountUi'
 import './security-recovery.css'
 
 const RECOVERY_CHALLENGES = [
@@ -25,9 +26,15 @@ export function SecurityRecoveryPanel({
   title = '绑定地址充值找回',
   actionText = '我已转账',
   onCancel,
-  boundAddress = 'TU***PU',
+  boundAddress: explicitBoundAddress,
   identityKey,
 }) {
+  const demo = useDemoSecurity()
+  const boundAddress = explicitBoundAddress ?? demo.boundAddress
+  const [scenario, setScenario] = useState('match')
+  const [expiresAt, setExpiresAt] = useState(Date.now() + 10 * 60 * 1000)
+  const callbacks = useRef({ beforeVerify, onVerified })
+  callbacks.current = { beforeVerify, onVerified }
   const [challenge, setChallenge] = useState(RECOVERY_CHALLENGES[0])
   const [currency, setCurrency] = useState('USDT')
   const [checking, setChecking] = useState(false)
@@ -39,6 +46,8 @@ export function SecurityRecoveryPanel({
   useEffect(() => {
     window.clearTimeout(timerRef.current)
     setChallenge(nextChallenge())
+    setScenario('match')
+    setExpiresAt(Date.now() + 10 * 60 * 1000)
     setCurrency('USDT')
     setChecking(false)
     setVerified(false)
@@ -59,12 +68,24 @@ export function SecurityRecoveryPanel({
 
   const verifyTransfer = () => {
     if (checking || verified) return
+    if (!boundAddress) { setMessage('当前没有已绑定的TRC20提现地址，不能使用充值找回'); return }
+    if (Date.now() >= expiresAt) { setMessage('当次挑战已过期，请刷新挑战'); return }
 
     const verification = {
       currency,
       amount,
       address: challenge.address,
       boundAddress,
+    }
+    const receipt = {
+      source: scenario === 'source' ? '错误来源' : boundAddress,
+      target: scenario === 'target' ? '错误目标' : challenge.address,
+      coin: scenario === 'coin' ? (currency === 'USDT' ? 'TRX' : 'USDT') : currency,
+      paid: scenario === 'amount' ? (Number(amount) + 0.01).toFixed(2) : amount,
+    }
+    if (receipt.source !== boundAddress || receipt.target !== challenge.address || receipt.coin !== currency || receipt.paid !== amount) {
+      setMessage('验证失败：来源地址、收款地址、币种和精确金额必须全部一致，安全资料未改变')
+      return
     }
     if (beforeVerify?.(verification) === false) return
 
@@ -73,9 +94,10 @@ export function SecurityRecoveryPanel({
     window.clearTimeout(timerRef.current)
     timerRef.current = window.setTimeout(() => {
       setChecking(false)
+      if (callbacks.current.beforeVerify?.(verification) === false) return
       setVerified(true)
       setMessage('演示到账已确认，身份验证通过')
-      onVerified?.(verification)
+      callbacks.current.onVerified?.(verification)
     }, 520)
   }
 
@@ -94,9 +116,10 @@ export function SecurityRecoveryPanel({
         <div><strong>{title}</strong>{purpose ? <small>{purpose}</small> : null}</div>
       </div>
 
+      {!boundAddress ? <Hint tone="warning">尚未绑定TRC20提现地址，充值找回不可用。</Hint> : null}
       <div className="sfa-transfer-recovery-rule">
         <b>请使用绑定地址 {boundAddress}</b>
-        <span>向下方指定地址转入当次随机金额；演示核验通过后，资金自动计入账户钱包余额。</span>
+        <span>向下方指定地址转入当次随机金额；演示核验通过后，仅模拟验证结果，不发生真实充值。</span>
       </div>
 
       <div className="sfa-transfer-amounts" role="radiogroup" aria-label="选择验证币种">
@@ -126,12 +149,16 @@ export function SecurityRecoveryPanel({
         <button type="button" disabled={checking || verified} onClick={() => copyValue(amount, '验证金额')} aria-label="复制验证金额"><Copy size={17} /></button>
       </div>
 
+      <label className="sfa-field"><span>模拟到账记录（验收用）</span><select value={scenario} disabled={checking || verified} onChange={(e) => setScenario(e.target.value)}>
+        <option value="match">四项全部匹配</option><option value="source">来源地址错误</option><option value="target">收款地址错误</option><option value="coin">币种错误</option><option value="amount">金额多0.01</option>
+      </select></label>
+      <button type="button" className="sfa-text-button" disabled={checking} onClick={() => { setChallenge(nextChallenge()); setExpiresAt(Date.now() + 10 * 60 * 1000); setVerified(false); setMessage('已刷新挑战，旧收款信息失效'); }}>刷新挑战</button>
       {message ? <div className={`sfa-transfer-feedback ${message.includes('通过') ? 'is-success' : ''}`} role="status">{message.includes('通过') ? <CheckCircle2 size={16} /> : null}{message}</div> : null}
       <Hint tone="warning">仅作本地流程演示，请勿真实转账。每次进入或切换验证身份会刷新一组演示金额，页面不会连接钱包或链上网络。</Hint>
 
       <div className={`sfa-recovery-panel-actions ${onCancel ? 'has-cancel' : ''}`.trim()}>
         {onCancel ? <button type="button" className="sfa-recovery-panel-cancel" onClick={cancel}>取消</button> : null}
-        <PrimaryButton disabled={checking || verified} onClick={verifyTransfer}>{verified ? '验证已完成' : checking ? '自动核验中…' : actionText}</PrimaryButton>
+        <PrimaryButton disabled={checking || verified || !boundAddress} onClick={verifyTransfer}>{verified ? '验证已完成' : checking ? '自动核验中…' : actionText}</PrimaryButton>
       </div>
     </section>
   )
@@ -145,7 +172,7 @@ export default function SecurityRecoveryModal({
   title = '充值找回',
   purpose = '验证账户身份',
   actionText = '我已转账',
-  boundAddress = 'TU***PU',
+  boundAddress: explicitBoundAddress,
   identityKey,
 }) {
   return (
@@ -161,7 +188,7 @@ export default function SecurityRecoveryModal({
         onVerified={onVerified}
         purpose={purpose}
         actionText={actionText}
-        boundAddress={boundAddress}
+        boundAddress={explicitBoundAddress}
         identityKey={identityKey}
       />
     </Modal>

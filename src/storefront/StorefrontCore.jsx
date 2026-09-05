@@ -71,6 +71,8 @@ import {
 import { getModuleRequirement } from '../requirements'
 import './core.css'
 
+import { useDemoSecurity } from './DemoSecurityContext'
+
 const noop = () => {}
 const userPageRequirement = getModuleRequirement('/front/pages/user/user')
 
@@ -548,14 +550,14 @@ function ActionImage({ item }) {
   return item.image ? <img src={item.image} alt="" /> : <span>{item.icon || '•'}</span>
 }
 
-export function UserPage({ onNavigate, onToast, userName = 'demo001', userId = '297' }) {
+export function UserPage({ onNavigate, onToast, userName: originalUserName = 'demo001', userId = '297' }) {
+  const demo = useDemoSecurity()
+  const userName = demo?.account || originalUserName
   const { toast, notify, go } = usePageActions(onNavigate, onToast)
   const [walletMode, setWalletMode] = useState('balance')
   const [showBalance, setShowBalance] = useState(true)
   const [serviceOpen, setServiceOpen] = useState(false)
-  const [addressOpen, setAddressOpen] = useState(false)
   const [changeNoteOpen, setChangeNoteOpen] = useState(false)
-  const [address, setAddress] = useState('')
 
   const handleAction = (item) => {
     if (item.id === 'service') return setServiceOpen(true)
@@ -582,9 +584,9 @@ export function UserPage({ onNavigate, onToast, userName = 'demo001', userId = '
         <div className="sf-user-profile">
           <button type="button" className="sf-user-avatar" onClick={() => notify('头像更换为演示功能')}><img src={assetPath('default-avatar.png')} alt="用户头像" /><span>✎</span></button>
           <button type="button" className="sf-user-identity" onClick={() => notify(`账号 ${userName}，ID ${userId}`)}>
-            <b>{userName} <small>(ID:{userId})</small></b><span>TRC20地址　<em>未绑定</em></span>
+            <b>{userName} <small>(ID:{userId})</small></b><span>TRC20地址　<em>{demo?.boundAddress ? '已绑定' : '未绑定'}</em></span>
           </button>
-          <button type="button" className="sf-bind-address" onClick={() => setAddressOpen(true)}>绑定地址</button>
+          <button type="button" className="sf-bind-address" onClick={() => go('/pages/security/account-bind', '账户管理')}>绑定地址</button>
         </div>
 
         <section className="sf-user-wallet">
@@ -638,11 +640,11 @@ export function UserPage({ onNavigate, onToast, userName = 'demo001', userId = '
             </div>
             <p className="sf-user-change-lead">{userPageRequirement.requirement}</p>
             <section>
-              <h3>本次修改</h3>
+              <h3>新增需求概览</h3>
               <ul>{userPageRequirement.changes.map((item) => <li key={item}>{item}</li>)}</ul>
             </section>
             <section>
-              <h3>账号与安全规则</h3>
+              <h3>新增规则</h3>
               <SecurityRuleCards rules={userPageRequirement.fields} />
             </section>
             <section>
@@ -664,15 +666,6 @@ export function UserPage({ onNavigate, onToast, userName = 'demo001', userId = '
       </BottomSheet>
       <BottomSheet open={serviceOpen} title="联系客服" onClose={() => setServiceOpen(false)}>
         <ServicePage embedded userName={userName} onToast={onToast} />
-      </BottomSheet>
-      <BottomSheet
-        open={addressOpen}
-        title="绑定 TRC20 地址"
-        onClose={() => setAddressOpen(false)}
-        footer={<button type="button" className="sf-primary-button" onClick={() => { if (!address.trim()) return notify('请输入钱包地址'); setAddressOpen(false); notify('演示地址已绑定', 'success') }}>确认绑定</button>}
-      >
-        <label className="sf-form-field"><span>钱包地址</span><input value={address} onChange={(event) => setAddress(event.target.value)} placeholder="请输入 TRC20 钱包地址" /></label>
-        <p className="sf-form-hint">仅保存于当前页面演示状态，不会发送或校验真实链上地址。</p>
       </BottomSheet>
       <Toast open={Boolean(toast)} message={toast?.message} type={toast?.type} />
     </div>

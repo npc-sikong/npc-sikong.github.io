@@ -134,6 +134,7 @@ export function Field({ label, value, onChange, placeholder = '请输入', type 
       <span className="sfa-field-label">{label}{right ? <em>{right}</em> : null}</span>
       <span className={`sfa-input-wrap ${disabled ? 'is-disabled' : ''}`}>
         <Input
+          aria-label={label || placeholder}
           value={value}
           type={textarea ? undefined : type}
           name={name}
@@ -156,7 +157,7 @@ export function PasswordField({ label, value, onChange, placeholder = '请输入
     <label className="sfa-field">
       <span className="sfa-field-label">{label}{right}</span>
       <span className="sfa-input-wrap">
-        <input value={value} type={visible ? 'text' : 'password'} inputMode="numeric" autoComplete="new-password" placeholder={placeholder} onChange={(event) => onChange?.(event.target.value)} />
+        <input aria-label={label || placeholder} value={value} type={visible ? 'text' : 'password'} inputMode={label?.includes('资金') ? 'numeric' : 'text'} autoComplete="new-password" placeholder={placeholder} onChange={(event) => onChange?.(event.target.value)} />
         <button className="sfa-input-icon" type="button" aria-label={visible ? '隐藏密码' : '显示密码'} onClick={() => setVisible((current) => !current)}>
           {visible ? <EyeOff size={18} /> : <Eye size={18} />}
         </button>
@@ -274,7 +275,7 @@ export function ConfirmModal({ open, title, content, confirmText = '确定', can
   )
 }
 
-export function GoogleVerificationModal({ open, purpose = '敏感操作', onClose, onVerified, onRecover }) {
+export function GoogleVerificationModal({ open, purpose = '敏感操作', onClose, onVerified, onRecover, beforeVerify, allowRecoveryCode = Boolean(onRecover) }) {
   const [mode, setMode] = useState('code')
   const [value, setValue] = useState('')
   const [error, setError] = useState('')
@@ -290,6 +291,7 @@ export function GoogleVerificationModal({ open, purpose = '敏感操作', onClos
   const submit = () => {
     if (mode === 'code' && !/^\d{6}$/.test(value)) return setError('请输入6位谷歌验证码')
     if (mode === 'recovery' && value.trim().length < 6) return setError('请输入一个尚未使用的一次性恢复码')
+    if (beforeVerify?.({ mode, value }) === false) return setError('恢复码无效、已使用或已作废')
     onVerified?.({ mode, token: mode === 'code' ? 'demo-google-proof' : 'demo-recovery-proof' })
   }
 
@@ -311,10 +313,10 @@ export function GoogleVerificationModal({ open, purpose = '敏感操作', onClos
         placeholder={mode === 'code' ? '请输入6位验证码' : '请输入恢复码'}
       />
       {error ? <div className="sfa-form-error">{error}</div> : null}
-      <button className="sfa-text-button" type="button" onClick={() => { setMode(mode === 'code' ? 'recovery' : 'code'); setValue(''); setError('') }}>
+      {allowRecoveryCode ? <button className="sfa-text-button" type="button" onClick={() => { setMode(mode === 'code' ? 'recovery' : 'code'); setValue(''); setError('') }}>
         {mode === 'code' ? '无法使用验证器？使用恢复码' : '返回使用谷歌验证码'}
-      </button>
-      {onRecover ? <button className="sfa-text-button" type="button" onClick={onRecover}>验证码和恢复码均无法使用？前往解绑谷歌验证</button> : null}
+      </button> : null}
+      {onRecover ? <button className="sfa-text-button" type="button" onClick={onRecover}>验证码无法使用？前往谷歌验证找回</button> : null}
     </Modal>
   )
 }

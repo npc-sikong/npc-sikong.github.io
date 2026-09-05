@@ -1,3 +1,4 @@
+import { useDemoSecurity } from './DemoSecurityContext'
 import { useState } from 'react'
 import { Award, CheckCircle2, Gift, ShieldCheck, Sparkles, Trophy } from 'lucide-react'
 import { BENEFITS, DEPOSIT_CHANNELS, LUCKY5_REWARDS, RANK_REWARDS, STREAK_REWARDS } from './accountData'
@@ -56,6 +57,7 @@ function AuthShell({ title, subtitle, actions, children, footer }) {
 }
 
 function LoginPage(props) {
+  const demo = useDemoSecurity()
   const actions = useSfaActions(props)
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -70,19 +72,21 @@ function LoginPage(props) {
     if (!/^[A-Za-z0-9]{6,16}$/.test(username)) return actions.notify('请输入6-16位字母或数字账号')
     if (password.length < 6 || password.length > 20) return actions.notify('请输入6-20位密码')
     if (!captcha) return actions.notify('请先完成人机验证')
+    if (username !== demo.account || !demo.validLogin(password)) return actions.notify('账号或登录密码不正确（请使用当前演示账号）')
+    if (props.googleBound === false) { demo.signIn(); actions.go('/pages/index/index'); return }
     setGoogle(true)
   }
 
   const findAccount = () => {
     if (!/^T[A-Za-z0-9]{20,}$/.test(address)) return actions.notify('请输入正确的TRC20地址')
-    if (address !== DEPOSIT_CHANNELS[0].address) return actions.notify('该地址未绑定演示账号')
+    if (!demo.boundAddress || address !== demo.boundAddress) return actions.notify('该地址未绑定演示账号')
     setFound(true)
     actions.notify('已找回账号', 'success')
   }
 
   return (
     <AuthShell title="登录" subtitle="欢迎回来，请登录您的账户" actions={actions} footer={<p>G6哈希 © 版权所有 侵权必究</p>}>
-      <StorefrontRequirementEntry path="/front/pages/login/login" />
+      <StorefrontRequirementEntry path="/front/pages/login/login" /><Hint>当前演示账号：{demo.account}。初始演示密码接受6–20位；自行设置后按新值核验，请勿输入真实凭据。{demo.sessionNotice}</Hint>
       <Card className="sfa-auth-card">
         <Field label="账号" value={username} onChange={(value) => setUsername(value.replace(/[^A-Za-z0-9]/g, '').slice(0, 16))} placeholder="请输入用户名" />
         <PasswordField label="密码" value={password} onChange={setPassword} placeholder="请输入密码" />
@@ -92,15 +96,17 @@ function LoginPage(props) {
         <div className="sfa-auth-links"><button type="button" onClick={() => setRecoverAccount(true)}>忘记账号</button><button type="button" onClick={() => actions.go('/pages/register/register')}>注册账号</button><button type="button" onClick={() => actions.go('/pages/help/hijack-guide')}>防劫持教程</button></div>
       </Card>
       <button className="sfa-service-link" type="button" onClick={() => actions.go('/pages/service/index')}>联系客服</button>
-      <Modal open={recoverAccount} title="找回账号" onClose={() => { setRecoverAccount(false); setFound(false) }} footer={found ? <div className="sfa-modal-actions"><GhostButton onClick={() => actions.copy('G6DEMO88', '账号')}>复制账号</GhostButton><PrimaryButton onClick={() => { setUsername('G6DEMO88'); setRecoverAccount(false); setFound(false) }}>去登录</PrimaryButton></div> : <PrimaryButton onClick={findAccount}>查询</PrimaryButton>}>
-        {found ? <CopyLine label="已找回账号" value="G6DEMO88" onCopy={() => actions.copy('G6DEMO88', '账号')} /> : <Field label="请输入已绑定的TRC20提现地址" value={address} onChange={setAddress} placeholder="请输入TRC20地址" right={<button type="button" onClick={() => { setAddress(DEPOSIT_CHANNELS[0].address); actions.notify('已粘贴演示地址') }}>粘贴</button>} />}
+      <Modal open={recoverAccount} title="找回账号" onClose={() => { setRecoverAccount(false); setFound(false) }} footer={found ? <div className="sfa-modal-actions"><GhostButton onClick={() => actions.copy(demo.account, '账号')}>复制账号</GhostButton><PrimaryButton onClick={() => { setUsername(demo.account); setRecoverAccount(false); setFound(false) }}>去登录</PrimaryButton></div> : <PrimaryButton onClick={findAccount}>查询</PrimaryButton>}>
+        {found ? <CopyLine label="已找回账号" value={demo.account} onCopy={() => actions.copy(demo.account, '账号')} /> : <Field label="请输入已绑定的TRC20提现地址" value={address} onChange={setAddress} placeholder="请输入TRC20地址" right={<button type="button" onClick={() => { setAddress(DEPOSIT_CHANNELS[0].address); actions.notify('已粘贴演示地址') }}>粘贴</button>} />}
       </Modal>
-      <GoogleVerificationModal open={google} purpose="谷歌登录验证" onClose={() => setGoogle(false)} onVerified={() => { setGoogle(false); actions.notify('登录成功', 'success'); actions.go('/pages/index/index') }} onRecover={() => { setGoogle(false); actions.go(`/pages/security/google-authenticator?recovery=1&account=${encodeURIComponent(username)}`) }} />
+      <GoogleVerificationModal open={google} purpose="谷歌登录验证" onClose={() => setGoogle(false)} beforeVerify={({ mode, value }) => mode !== 'recovery' || demo.consumeCode(value)}
+        onVerified={({ mode }) => { setGoogle(false); if (mode === 'recovery') { actions.go('/pages/security/google-authenticator?recovery=1'); return } actions.notify('登录成功', 'success'); demo.signIn(); actions.go('/pages/index/index') }} onRecover={() => { setGoogle(false); actions.go(`/pages/security/google-authenticator?recovery=1&account=${encodeURIComponent(username)}`) }} />
     </AuthShell>
   )
 }
 
 function RegisterPage(props) {
+  const demo = useDemoSecurity()
   const actions = useSfaActions(props)
   const [form, setForm] = useState({ username: '', password: '', confirm: '', invite: props?.inviteCode || '' })
   const [showInvite, setShowInvite] = useState(Boolean(props?.inviteCode))
@@ -111,11 +117,14 @@ function RegisterPage(props) {
     if (form.password.length < 6 || form.password.length > 20) return actions.notify('请输入6-20位密码')
     if (form.password !== form.confirm) return actions.notify('两次密码输入不一致')
     if (props?.inviteRequired && form.invite.length < 6) return actions.notify('请输入邀请码')
+    demo.register(form.username, form.password)
+    props.setSecurityProfile?.({ configured: false, question: '', answer: '', tip: '' })
+    props.setGoogleBound?.(false)
     setSuccess(true)
   }
   return (
     <AuthShell title="注册账户" subtitle="创建您的 G6 哈希账户" actions={actions} footer={<button type="button" onClick={() => actions.go('/pages/login/login')}>已有账号？回到登录界面</button>}>
-      <Card className="sfa-auth-card">
+      <StorefrontRequirementEntry path="/front/pages/register/register" /><Card className="sfa-auth-card">
         <Field label="账号" value={form.username} onChange={(value) => update('username', value.replace(/[^A-Za-z0-9]/g, '').slice(0, 16))} placeholder="请输入用户名" />
         <PasswordField label="密码" value={form.password} onChange={(value) => update('password', value)} />
         <PasswordField label="确认密码" value={form.confirm} onChange={(value) => update('confirm', value)} />
@@ -134,91 +143,52 @@ function RegisterPage(props) {
 
 function RecoverPage(props) {
   const actions = useSfaActions(props)
-  const securityConfigured = Boolean(props.securityProfile?.configured && props.securityProfile?.answer)
-  const availableCredentials = recoveryCredentialsFor('login', {
-    securityConfigured,
-    googleBound: props.googleBound !== false,
-  })
-  const [method, setMethod] = useState(recoveryCredentialPairAvailable(availableCredentials) ? 'credentials' : 'transfer')
+  const demo = useDemoSecurity()
+  const [method, setMethod] = useState('security')
   const [username, setUsername] = useState('')
+  const [loadedAccount, setLoadedAccount] = useState('')
+  const [answer, setAnswer] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
-
-  const normalizedUsername = username.trim()
-
-  const validateUsername = () => {
-    if (!/^[A-Za-z0-9]{6,16}$/.test(normalizedUsername)) {
-      actions.notify('请输入6-16位字母或数字会员账号')
-      return false
-    }
+  const profile = props.securityProfile || {}
+  const validAccount = () => {
+    if (username.trim() !== demo.account) { actions.notify('未找到该演示账号'); return false }
     return true
   }
-
-  const validatePassword = () => {
-    if (password.length < 6 || password.length > 20) {
-      actions.notify('请输入新密码（6-20位）')
-      return false
-    }
-    if (password !== confirm) {
-      actions.notify('两次密码输入不一致')
-      return false
-    }
+  const validNewPassword = () => {
+    if (!validAccount()) return false
+    if (password.length < 6 || password.length > 20) { actions.notify('新密码需为6–20位'); return false }
+    if (password !== confirm) { actions.notify('两次密码输入不一致'); return false }
     return true
   }
-
-  const finishCredentialRecovery = () => {
-    actions.notify('两项凭据验证通过，登录密码已重置', 'success')
+  const finish = () => {
+    demo.setLoginPassword(password)
+    demo.revokeSessions()
+    actions.notify('登录密码已重置，全部旧会话已注销（演示）', 'success')
     actions.go('/pages/login/login')
   }
-
-  const finishTransferRecovery = ({ amount, currency } = {}) => {
-    actions.notify(`${amount || ''}${amount ? ` ${currency}` : ''} 已计入钱包，登录密码已重置`, 'success')
-    actions.go('/pages/login/login')
+  const verify = () => {
+    if (!validNewPassword()) return
+    if (loadedAccount !== username.trim()) return actions.notify('请先获取当前账号的密保')
+    if (!profile.configured || answer.trim() !== profile.answer) return actions.notify('密保答案不正确')
+    finish()
   }
-
-  const changeMethod = (value) => {
-    setMethod(value)
-  }
-
-  const validateCredentialRecovery = (payload) => {
-    if (!validateUsername() || !validatePassword()) return false
-    return validateRecoveryCredentialValues(payload, props.securityProfile, actions.notify)
-  }
-
-  return (
-    <PageShell title="找回密码" subtitle={method === 'credentials' ? '使用密保＋资金密码固定组合验证' : '绑定地址充值到账后自动验证'} onBack={actions.back} message={actions.localMessage} className="sfa-password-recovery-page">
-      <StorefrontRequirementEntry path="/front/pages/login/recover-password" />
-      <Card className="sfa-password-recovery-account">
-        <Field label="会员账号" value={username} onChange={(value) => setUsername(value.replace(/[^A-Za-z0-9]/g, '').slice(0, 16))} placeholder="请输入6-16位会员账号" />
-      </Card>
-      <Hint>本页提供两条独立路径：固定验证“密保答案＋资金密码”，或使用绑定地址充值验证；登录密码不会参与验证自己。</Hint>
-      <Segmented items={[{ value: 'credentials', label: '双凭据找回' }, { value: 'transfer', label: '绑定地址充值找回' }]} value={method} onChange={changeMethod} />
-      <Card className="sfa-password-recovery-card">
-        <SectionTitle>设置新登录密码</SectionTitle>
-        <PasswordField label="新密码" value={password} onChange={setPassword} placeholder="请输入新密码（6-20位）" />
-        <PasswordField label="确认新密码" value={confirm} onChange={setConfirm} placeholder="请再次输入新密码" />
-      </Card>
-      {method === 'credentials' ? (
-        <CredentialPairRecoveryPanel
-          identityKey="login-password-recovery"
-          targetLabel="登录密码"
-          availableCredentials={availableCredentials}
-          actionText="验证并重置登录密码"
-          beforeVerify={validateCredentialRecovery}
-          onVerified={finishCredentialRecovery}
-        />
-      ) : (
-        <SecurityRecoveryPanel
-          identityKey="login-password-recovery"
-          title="绑定地址充值找回"
-          purpose="演示到账后自动验证并重置登录密码"
-          actionText="我已转账并重置密码"
-          beforeVerify={() => validateUsername() && validatePassword()}
-          onVerified={finishTransferRecovery}
-        />
-      )}
-    </PageShell>
-  )
+  return <PageShell title="找回密码" subtitle="原有密保找回／新增充值备用找回" onBack={actions.back} message={actions.localMessage}>
+    <StorefrontRequirementEntry path="/front/pages/login/recover-password" />
+    <Hint>当前演示账号：{demo.account}。密保找回不要求资金密码，新密码在本页一次填写。</Hint>
+    <Card><Field label="会员账号" value={username} onChange={(value) => { setUsername(value); setLoadedAccount(''); setAnswer('') }} placeholder="请输入会员账号" /></Card>
+    <Segmented items={[{ value: 'security', label: '密保找回（原有）' }, { value: 'transfer', label: '充值找回（新增）' }]} value={method} onChange={setMethod} />
+    <Card>
+      {method === 'security' ? <>
+        <GhostButton onClick={() => { if (!validAccount()) return; if (!profile.configured) return actions.notify('该账号尚未设置密保，请使用充值备用找回'); setLoadedAccount(username.trim()) }}>获取密保</GhostButton>
+        {loadedAccount === username.trim() && loadedAccount ? <><div className="sfa-security-question-value"><strong>{profile.question}</strong><span>密保提示：{profile.tip || '未填写'}</span></div><Field label="当前密保答案" value={answer} onChange={setAnswer} placeholder="请输入密保答案" /></> : null}
+      </> : null}
+      <PasswordField label="新登录密码" value={password} onChange={setPassword} placeholder="请输入6–20位新密码" />
+      <PasswordField label="确认新登录密码" value={confirm} onChange={setConfirm} placeholder="请再次输入新密码" />
+      {method === 'security' ? <PrimaryButton onClick={verify}>验证并重置登录密码</PrimaryButton> : null}
+    </Card>
+    {method === 'transfer' ? <SecurityRecoveryPanel identityKey={username} beforeVerify={validNewPassword} onVerified={finish} purpose="四项匹配后重置登录密码并注销旧会话" actionText="模拟到账并重置密码" /> : null}
+  </PageShell>
 }
 
 function AgreementPage(props) {

@@ -1,3 +1,5 @@
+import GoogleAuthenticatorPage from './GoogleAuthenticatorPage'
+import { useDemoSecurity } from './DemoSecurityContext'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { CreditCard, KeyRound, Landmark, LockKeyhole, ShieldCheck, Smartphone, UserRoundCheck, Wallet } from 'lucide-react'
 import { BANKS, DEPOSIT_CHANNELS, SECURITY_MENU, SECURITY_QUESTIONS } from './accountData'
@@ -40,6 +42,7 @@ const securityIcons = {
 }
 
 export function SecurityCenterPage(props) {
+  const demo = useDemoSecurity()
   const actions = useSfaActions(props)
   const [logout, setLogout] = useState(false)
   const securityConfigured = Boolean(props.securityProfile?.configured)
@@ -53,19 +56,22 @@ export function SecurityCenterPage(props) {
     }
     if (item.id === 'google') return {
       ...item,
-      subtitle: googleBound ? '可更换，或使用双凭据/充值验证重置解绑' : '使用资金密码、密保和新谷歌码完成绑定',
+      subtitle: googleBound ? '当前谷歌码正常解绑，恢复码或充值备用找回' : '使用资金密码和新谷歌码完成绑定',
       status: googleBound ? '已绑定' : '未绑定',
     }
+    if (item.id === 'fund') return { ...item, title: demo.fundConfigured ? '修改资金密码' : '设置资金密码', status: demo.fundConfigured ? '已设置' : '未设置' }
+    if (item.id === 'account') return { ...item, status: demo.boundAddress ? '已绑定' : '未绑定' }
     return item
-  }), [googleBound, securityConfigured])
+  }), [googleBound, securityConfigured, demo.fundConfigured, demo.boundAddress])
 
   return (
     <PageShell title="安全中心" onBack={actions.back} message={actions.localMessage}>
-      <Card className="sfa-security-banner"><div className="sfa-security-emblem"><ShieldCheck size={31} /></div><div><strong>{securityConfigured ? '账户保护已开启' : '账户保护待完善'}</strong><small>{securityConfigured ? '建议定期检查安全配置与恢复方式' : '请先设置密保，再进行敏感账户操作'}</small></div><Badge tone={securityConfigured ? 'success' : 'warning'}>{securityConfigured ? '安全' : '待设置'}</Badge></Card>
+      <StorefrontRequirementEntry path="/front/pages/security/center" />
+      <Card className="sfa-security-banner"><div className="sfa-security-emblem"><ShieldCheck size={31} /></div><div><strong>{securityConfigured ? '账户保护已开启' : '账户保护待完善'}</strong><small>{securityConfigured ? '建议定期检查安全配置与恢复方式' : '请按各项操作要求完善安全资料'}</small></div><Badge tone={securityConfigured ? 'success' : 'warning'}>{securityConfigured ? '安全' : '待设置'}</Badge></Card>
       <SectionTitle>账户安全</SectionTitle>
       <Card className="sfa-action-list">{securityMenu.map((item) => <ActionRow key={item.id} title={item.title} subtitle={item.subtitle} status={item.status} icon={securityIcons[item.id]} onClick={() => actions.go(item.route)} />)}</Card>
       <Card className="sfa-action-list"><ActionRow title="退出登录" subtitle="清空当前设备的本地登录状态" icon={<UserRoundCheck size={20} />} danger onClick={() => setLogout(true)} /></Card>
-      <ConfirmModal open={logout} title="确认退出当前账号？" content="退出后将清空本地登录态，需要重新登录才能继续访问会员页面。" confirmText="确认退出" danger onCancel={() => { setLogout(false); actions.notify('已取消退出') }} onConfirm={() => { setLogout(false); actions.notify('已退出登录', 'success'); actions.go('/pages/login/login') }} />
+      <ConfirmModal open={logout} title="确认退出当前账号？" content="退出后清空本地演示会话并返回登录页；本原型不提供真实鉴权。" confirmText="确认退出" danger onCancel={() => { setLogout(false); actions.notify('已取消退出') }} onConfirm={() => { demo.revokeSessions(); setLogout(false); actions.notify('已退出登录', 'success'); actions.go('/pages/login/login') }} />
     </PageShell>
   )
 }
@@ -79,6 +85,7 @@ const accountTypes = [
 ]
 
 export function AccountBindPage(props) {
+  const demo = useDemoSecurity()
   const actions = useSfaActions(props)
   const requestedType = String(props?.type || props?.path || '').toLowerCase()
   const initialType = accountTypes.find((item) => requestedType.includes(item.value) && !item.disabled)?.value || 'trc20'
@@ -97,7 +104,7 @@ export function AccountBindPage(props) {
     googleBound: props.googleBound !== false,
   })
   const [recoveryMethod, setRecoveryMethod] = useState(recoveryCredentialPairAvailable(securityRecoveryCredentials) ? 'credentials' : 'transfer')
-  const [bindings, setBindings] = useState({ trc20: ['TV8u...V6Y2P3s'], alipay: [], bank: [] })
+  const [bindings, setBindings] = useState({ trc20: demo.boundAddress ? [demo.boundAddress] : [], alipay: [], bank: [] })
   const [forms, setForms] = useState({
     trc20: { address: '' },
     alipay: { name: '', account: '' },
@@ -138,15 +145,16 @@ export function AccountBindPage(props) {
     if (type === 'trc20' && !/^T[A-Za-z0-9]{20,}$/.test(form.address)) return actions.notify('请输入正确的TRC20地址')
     if (type === 'alipay' && (!form.name.trim() || !form.account.trim())) return actions.notify('请填写完整绑定信息')
     if (type === 'bank' && (!form.bank || !form.name.trim() || !form.card.trim())) return actions.notify('请填写完整银行卡信息')
-    if (!/^\d{6}$/.test(fundPassword)) return actions.notify('请输入6位资金密码')
+    if (!demo.validFund(fundPassword)) return actions.notify('资金密码不正确或尚未设置')
     if (!answer.trim()) return actions.notify('请输入密保答案')
     if (props.securityProfile?.answer && answer.trim() !== props.securityProfile.answer) return actions.notify('密保答案不正确')
-    if (!/^\d{6}$/.test(googleCode)) return actions.notify('请输入6位谷歌验证码')
+    if (props.googleBound !== false && !/^\d{6}$/.test(googleCode)) return actions.notify('请输入6位谷歌验证码')
     finishBind()
   }
 
   const finishBind = () => {
     const value = type === 'trc20' ? forms.trc20.address : type === 'alipay' ? `${forms.alipay.name} · ${forms.alipay.account}` : `${forms.bank.bank} · ${forms.bank.card}`
+    if (type === 'trc20') demo.setBoundAddress(forms.trc20.address)
     setBindings((current) => ({ ...current, [type]: [...(current[type] || []), value] }))
     setFormOpen(false)
     setFundPassword('')
@@ -159,7 +167,7 @@ export function AccountBindPage(props) {
     props.setSecurityProfile?.({ configured: false, question: '', answer: '', tip: '', resetGranted: true })
     setRecoveryOpen(false)
     setFormOpen(false)
-    actions.notify(amount ? `${amount} ${currency} 已计入钱包，密保已恢复为未设置` : '两项凭据验证通过，密保已恢复为未设置', 'success')
+    actions.notify(amount ? `${amount} ${currency} 模拟到账验证通过，密保已恢复为未设置` : '两项凭据验证通过，密保已恢复为未设置', 'success')
     actions.go('/pages/security/security-question')
   }
 
@@ -211,8 +219,8 @@ export function AccountBindPage(props) {
           <PasswordField label="资金密码" value={fundPassword} onChange={(value) => setFundPassword(value.replace(/\D/g, '').slice(0, 6))} placeholder="请输入6位资金密码" />
           <div className="sfa-security-question-value"><small>当前密保问题</small><strong>{currentQuestion || '尚未设置密保'}</strong></div>
           <Field label="密保答案" value={answer} onChange={setAnswer} placeholder="请输入答案" right={<button type="button" onClick={openSecurityRecovery}>忘记密保？</button>} />
-          <Field label="谷歌验证码" value={googleCode} onChange={(value) => setGoogleCode(value.replace(/\D/g, '').slice(0, 6))} placeholder="请输入6位谷歌验证码" />
-          <Hint>账户信息、资金密码、密保答案和谷歌验证码在本页一次提交，无需再打开验证弹窗。</Hint>
+          {props.googleBound !== false ? <Field label="谷歌验证码" value={googleCode} onChange={(value) => setGoogleCode(value.replace(/\D/g, '').slice(0, 6))} placeholder="请输入6位谷歌验证码" /> : null}
+          <Hint>账户信息、资金密码、密保答案和条件谷歌码同页提交；未绑定谷歌时无需谷歌码。新增要求：密保必须核验通过（原型仅模拟，服务端尚待补齐）。</Hint>
           <div className="sfa-inline-actions"><GhostButton onClick={() => setFormOpen(false)}>取消</GhostButton><PrimaryButton onClick={validate}>确认绑定</PrimaryButton></div>
         </Card>
         <Modal open={bankSheet} title="选择开户银行" onClose={() => setBankSheet(false)}>
@@ -302,89 +310,34 @@ function answerMatches(profile, answer) {
 
 function LoginPasswordPage(props) {
   const actions = useSfaActions(props)
-  const profile = props.securityProfile || {}
-  const [form, setForm] = useState({ answer: '', old: '', next: '', confirm: '' })
-  const [recoveryOpen, setRecoveryOpen] = useState(false)
-  const securityRecoveryCredentials = recoveryCredentialsFor('security', {
-    securityConfigured: Boolean(profile.configured && profile.answer),
-    googleBound: props.googleBound !== false,
-  })
-  const [recoveryMethod, setRecoveryMethod] = useState(recoveryCredentialPairAvailable(securityRecoveryCredentials) ? 'credentials' : 'transfer')
+  const demo = useDemoSecurity()
+  const [form, setForm] = useState({ old: '', fund: '', google: '', next: '', confirm: '' })
   const update = (key, value) => setForm((current) => ({ ...current, [key]: value }))
-
   const submit = () => {
-    if (!profile.configured || !profile.answer) return actions.notify('当前未设置密保，请先完成密保设置')
-    if (!form.answer.trim()) return actions.notify('请输入密保答案')
-    if (!answerMatches(profile, form.answer)) return actions.notify('密保答案不正确')
-    if (form.old.length < 6) return actions.notify('请输入旧登录密码')
-    if (form.next.length < 6 || form.next.length > 20) return actions.notify('新登录密码需为6-20位')
-    if (form.next !== form.confirm) return actions.notify('两次新登录密码不一致')
-    setForm({ answer: '', old: '', next: '', confirm: '' })
-    actions.notify('密保与旧密码验证通过，登录密码已修改', 'success')
+    if (!demo.validLogin(form.old)) return actions.notify('旧登录密码不正确')
+    if (!demo.validFund(form.fund)) return actions.notify('资金密码不正确或尚未设置')
+    if (props.googleBound !== false && !/^\d{6}$/.test(form.google)) return actions.notify('已绑定谷歌，请填写6位谷歌码')
+    if (form.next.length < 6 || form.next.length > 20) return actions.notify('新登录密码需为6–20位')
+    if (form.next !== form.confirm) return actions.notify('两次新密码不一致')
+    demo.setLoginPassword(form.next)
+    setForm({ old: '', fund: '', google: '', next: '', confirm: '' })
+    actions.notify('登录密码修改成功（本地演示）', 'success')
   }
-
-  const recoverSecurity = ({ amount, currency } = {}) => {
-    setRecoveryOpen(false)
-    props.setSecurityProfile?.({ configured: false, question: '', answer: '', tip: '', resetGranted: true })
-    actions.notify(amount ? `${amount} ${currency} 已计入钱包，请重新设置密保` : '两项凭据验证通过，请重新设置密保', 'success')
-    actions.go('/pages/security/security-question')
-  }
-
-  const openSecurityRecovery = () => {
-    setRecoveryMethod(recoveryCredentialPairAvailable(securityRecoveryCredentials) ? 'credentials' : 'transfer')
-    setRecoveryOpen(true)
-  }
-
-  const pageBottom = recoveryOpen
-    ? null
-    : profile.configured
-      ? <PrimaryButton onClick={submit}>确认修改</PrimaryButton>
-      : <PrimaryButton onClick={() => actions.go('/pages/security/security-question')}>先设置密保</PrimaryButton>
-
-  return (
-    <PageShell title={recoveryOpen ? '找回密保' : '修改登录密码'} onBack={recoveryOpen ? () => setRecoveryOpen(false) : actions.back} message={actions.localMessage} bottom={pageBottom}>
-      <StorefrontRequirementEntry path="/front/pages/security/login-password" />
-      {recoveryOpen ? (
-        <>
-          <Hint>找回密保提供两条独立路径：固定验证“登录密码＋资金密码”，或使用绑定地址充值验证。密保不能参与验证自己。</Hint>
-          <Segmented items={[{ value: 'credentials', label: '双凭据找回' }, { value: 'transfer', label: '绑定地址充值找回' }]} value={recoveryMethod} onChange={setRecoveryMethod} />
-          {recoveryMethod === 'credentials' ? <CredentialPairRecoveryPanel
-            identityKey="login-password-security-recovery"
-            targetLabel="密保"
-            availableCredentials={securityRecoveryCredentials}
-            actionText="验证并找回密保"
-            beforeVerify={(payload) => validateRecoveryCredentialValues(payload, profile, actions.notify)}
-            onVerified={recoverSecurity}
-          /> : <SecurityRecoveryPanel
-            identityKey="login-password-security-recovery"
-            title="绑定地址充值找回"
-            purpose="演示到账后将密保恢复为未设置状态"
-            actionText="我已转账并找回密保"
-            onVerified={recoverSecurity}
-          />}
-        </>
-      ) : profile.configured ? <>
-        <Card className="sfa-security-form-card">
-          <SectionTitle>密保与旧密码验证</SectionTitle>
-          <SecurityQuestionDisplay profile={profile} />
-          <Field label="密保答案" value={form.answer} onChange={(value) => update('answer', value)} placeholder="请输入密保答案" right={<button type="button" onClick={openSecurityRecovery}>忘记密保？</button>} />
-          <PasswordField label="旧登录密码" value={form.old} onChange={(value) => update('old', value)} placeholder="请输入旧登录密码" right={<button type="button" onClick={() => actions.go('/pages/login/recover-password')}>忘记密码？</button>} />
-          <PasswordField label="新登录密码" value={form.next} onChange={(value) => update('next', value)} placeholder="请输入6-20位新密码" />
-          <PasswordField label="确认新登录密码" value={form.confirm} onChange={(value) => update('confirm', value)} placeholder="请再次输入新密码" />
-        </Card>
-        <Hint>修改登录密码必须同时验证当前密保答案和旧登录密码。</Hint>
-      </> : <>
-        <Card className="sfa-security-form-card">
-          <SectionTitle>请先完善密保</SectionTitle>
-          <Hint tone="warning">当前账户尚未设置密保，不能显示虚拟问题或跳过验证修改登录密码。</Hint>
-          <div className="sfa-security-submit"><GhostButton onClick={() => actions.go('/pages/security/security-question')}>设置密保</GhostButton></div>
-        </Card>
-      </>}
-    </PageShell>
-  )
+  return <PageShell title="修改登录密码" onBack={actions.back} message={actions.localMessage} bottom={<PrimaryButton onClick={submit}>确认修改</PrimaryButton>}>
+    <StorefrontRequirementEntry path="/front/pages/security/login-password" />
+    <Hint>旧登录密码＋资金密码＋条件谷歌码＋新登录密码（原有）。不要求密保；未绑定谷歌时不要求谷歌码。</Hint>
+    <Card>
+      <PasswordField label="旧登录密码" value={form.old} onChange={(v) => update('old', v)} right={<button type="button" onClick={() => actions.go('/pages/login/recover-password')}>忘记密码？</button>} />
+      <PasswordField label="新登录密码" value={form.next} onChange={(v) => update('next', v)} />
+      <PasswordField label="确认新登录密码" value={form.confirm} onChange={(v) => update('confirm', v)} />
+      <PasswordField label="资金密码" value={form.fund} onChange={(v) => update('fund', v.replace(/\D/g, '').slice(0, 6))} />
+      {props.googleBound !== false ? <Field label="谷歌验证码" value={form.google} onChange={(v) => update('google', v.replace(/\D/g, '').slice(0, 6))} /> : null}
+    </Card>
+  </PageShell>
 }
 
 function FundPasswordPage(props) {
+  const demo = useDemoSecurity()
   const actions = useSfaActions(props)
   const profile = props.securityProfile || {}
   const initialRecover = String(props.path || '').includes('recover=1')
@@ -409,23 +362,26 @@ function FundPasswordPage(props) {
   }
 
   const submitModify = () => {
-    if (!/^\d{6}$/.test(form.old)) return actions.notify('请输入6位旧资金密码')
+    if (demo.fundConfigured && !demo.validFund(form.old)) return actions.notify('旧资金密码不正确')
     if (!validateNewFund()) return
-    if (!/^\d{6}$/.test(form.google)) return actions.notify('请输入6位谷歌验证码')
+    if (demo.fundConfigured && props.googleBound !== false && !/^\d{6}$/.test(form.google)) return actions.notify('请输入6位谷歌验证码')
+    demo.setFundPassword(form.next); demo.setFundConfigured(true)
     setForm({ old: '', next: '', confirm: '', google: '', answer: '' })
-    actions.notify('旧资金密码与谷歌验证通过，资金密码已修改', 'success')
+    actions.notify('资金密码已保存（已绑定谷歌时追加验证）', 'success')
   }
 
   const finishCredentialRecovery = () => {
+    demo.setFundPassword(form.next); demo.setFundConfigured(true)
     setForm({ old: '', next: '', confirm: '', google: '', answer: '' })
     setMethod('modify')
     actions.notify('两项凭据验证通过，资金密码已重置', 'success')
   }
 
   const finishTransfer = ({ amount, currency } = {}) => {
+    demo.setFundPassword(form.next); demo.setFundConfigured(true)
     setForm({ old: '', next: '', confirm: '', google: '', answer: '' })
     setMethod('modify')
-    actions.notify(`${amount || ''}${amount ? ` ${currency}` : ''} 已计入钱包，资金密码已重置`, 'success')
+    actions.notify(`${amount || ''}${amount ? ` ${currency}` : ''} 模拟到账验证通过，资金密码已重置`, 'success')
   }
 
   const pageBottom = method === 'modify'
@@ -433,14 +389,14 @@ function FundPasswordPage(props) {
     : null
 
   return (
-    <PageShell title={method === 'modify' ? '修改资金密码' : '找回资金密码'} onBack={actions.back} message={actions.localMessage} bottom={pageBottom}>
+    <PageShell title={method === 'modify' ? (demo.fundConfigured ? '修改资金密码' : '设置资金密码') : '找回资金密码'} onBack={actions.back} message={actions.localMessage} bottom={pageBottom}>
       <StorefrontRequirementEntry path="/front/pages/security/recharge-password" />
-      <Segmented items={[{ value: 'modify', label: '正常修改' }, { value: 'credentials', label: '双凭据找回' }, { value: 'transfer', label: '充值找回' }]} value={method} onChange={(value) => { setMethod(value); setForm({ old: '', next: '', confirm: '', google: '', answer: '' }) }} />
+      <Segmented items={[{ value: 'modify', label: '正常修改' }, { value: 'credentials', label: '自助找回（新增）' }, { value: 'transfer', label: '充值找回（新增）' }]} value={method} onChange={(value) => { setMethod(value); setForm({ old: '', next: '', confirm: '', google: '', answer: '' }) }} />
       {method === 'modify' ? <Card className="sfa-security-form-card">
-        <PasswordField label="旧资金密码" value={form.old} onChange={(value) => update('old', value.replace(/\D/g, '').slice(0, 6))} placeholder="请输入旧资金密码" right={<button type="button" onClick={() => setMethod('credentials')}>忘记密码？</button>} />
+        {demo.fundConfigured ? <PasswordField label="旧资金密码" value={form.old} onChange={(value) => update('old', value.replace(/\D/g, '').slice(0, 6))} placeholder="请输入旧资金密码" right={<button type="button" onClick={() => actions.go('/pages/service/index')}>忘记密码？联系客服</button>} /> : null}
         <PasswordField label="新资金密码" value={form.next} onChange={(value) => update('next', value.replace(/\D/g, '').slice(0, 6))} placeholder="请输入6位新资金密码" />
         <PasswordField label="确认新资金密码" value={form.confirm} onChange={(value) => update('confirm', value.replace(/\D/g, '').slice(0, 6))} placeholder="请再次输入新资金密码" />
-        <Field label="谷歌验证码" value={form.google} onChange={(value) => update('google', value.replace(/\D/g, '').slice(0, 6))} placeholder="请输入6位谷歌验证码" />
+        {demo.fundConfigured && props.googleBound !== false ? <Field label="谷歌验证码" value={form.google} onChange={(value) => update('google', value.replace(/\D/g, '').slice(0, 6))} placeholder="请输入6位谷歌验证码" /> : null}
       </Card> : <>
         <Hint>找回资金密码提供两条独立路径：固定验证“密保答案＋登录密码”，或使用绑定地址充值验证；资金密码不会参与验证自己。</Hint>
         <Card className="sfa-security-form-card">
@@ -469,12 +425,13 @@ function FundPasswordPage(props) {
 }
 
 function SecurityQuestionPage(props) {
+  const demo = useDemoSecurity()
   const actions = useSfaActions(props)
   const securityProfile = props.securityProfile || {}
   const securityConfigured = Boolean(securityProfile.configured)
-  const suggestedQuestion = SECURITY_QUESTIONS.find((item) => item !== securityProfile.question) || SECURITY_QUESTIONS[0]
+  const suggestedQuestion = SECURITY_QUESTIONS[0]
   const [stage, setStage] = useState(securityConfigured ? 'change' : 'setup')
-  const [verificationMode, setVerificationMode] = useState('fund')
+  const [verifiedUntil, setVerifiedUntil] = useState(0)
   const [oldAnswer, setOldAnswer] = useState('')
   const [question, setQuestion] = useState(securityConfigured ? suggestedQuestion : SECURITY_QUESTIONS[2])
   const [questionSheet, setQuestionSheet] = useState(false)
@@ -491,32 +448,47 @@ function SecurityQuestionPage(props) {
 
   useEffect(() => {
     setStage(securityConfigured ? 'change' : 'setup')
-    setVerificationMode('fund')
     setOldAnswer('')
     setAnswer('')
     setTip('')
     setFund('')
     setGoogleCode('')
+    setVerifiedUntil(0)
     setQuestion(securityConfigured ? suggestedQuestion : SECURITY_QUESTIONS[2])
-  }, [securityConfigured])
+  }, [securityConfigured, securityProfile.question, securityProfile.answer])
 
   const recoveredByVerification = Boolean(securityProfile.resetGranted)
-  const initialSetupNeedsFund = stage === 'setup' && !recoveredByVerification
-  const setupReady = Boolean(question && answer.trim() && tip.trim() && (!initialSetupNeedsFund || /^\d{6}$/.test(fund)))
-  const changeReady = Boolean(oldAnswer.trim() && question && answer.trim() && tip.trim() && (
-    verificationMode === 'fund' ? /^\d{6}$/.test(fund) : /^\d{6}$/.test(googleCode)
-  ))
+  const initialSetupNeedsFund = stage === 'setup' && !demo.fundConfigured
+  const setupReady = Boolean(question && answer.trim() && (!initialSetupNeedsFund || /^\d{6}$/.test(fund)) && (props.googleBound === false || /^\d{6}$/.test(googleCode)))
+  const verificationReady = Boolean(oldAnswer.trim() && /^\d{6}$/.test(fund))
+  const changeReady = Boolean(verifiedUntil && question && answer.trim() && (props.googleBound === false || /^\d{6}$/.test(googleCode)))
+
+  const verifyCurrentSecurity = () => {
+    if (!answerMatches(securityProfile, oldAnswer)) return actions.notify('当前密保答案不正确')
+    if (!demo.validFund(fund)) return actions.notify('资金密码不正确或尚未设置')
+    setVerifiedUntil(Date.now() + 10 * 60 * 1000)
+    setStage('edit')
+    setOldAnswer('')
+    setFund('')
+    actions.notify('原密保与资金密码验证通过，请设置新密保', 'success')
+  }
+
+  const returnToVerification = () => {
+    setStage('change')
+    setVerifiedUntil(0)
+    setGoogleCode('')
+  }
 
   const saveNewSecurity = () => {
-    if (stage === 'change') {
-      if (!oldAnswer.trim()) return actions.notify('请输入当前密保答案')
-      if (!answerMatches(securityProfile, oldAnswer)) return actions.notify('当前密保答案不正确')
-      if (verificationMode === 'fund' && !/^\d{6}$/.test(fund)) return actions.notify('请输入6位资金密码')
-      if (verificationMode === 'google' && props.googleBound === false) return actions.notify('当前未绑定谷歌验证器，请改用资金密码验证')
-      if (verificationMode === 'google' && !/^\d{6}$/.test(googleCode)) return actions.notify('请输入6位谷歌验证码')
+    if (securityConfigured && (stage !== 'edit' || Date.now() >= verifiedUntil)) {
+      returnToVerification()
+      return actions.notify('原密保验证已失效，请重新验证')
     }
-    if (!question || !answer.trim() || !tip.trim()) return actions.notify('请完整填写密保问题、答案和提示')
+    if (!question || !answer.trim()) return actions.notify('请填写密保问题和答案')
+    if (tip.trim() && tip.trim() === answer.trim()) return actions.notify('密保提示不能与密保答案相同（新增）')
+    if (props.googleBound !== false && !/^\d{6}$/.test(googleCode)) return actions.notify('已绑定谷歌，请填写6位谷歌码')
     if (initialSetupNeedsFund && !/^\d{6}$/.test(fund)) return actions.notify('首次设置密保需验证6位资金密码')
+    if (initialSetupNeedsFund) { demo.setFundPassword(fund); demo.setFundConfigured(true) }
     const wasConfigured = securityConfigured
     props.setSecurityProfile?.({
       ...securityProfile,
@@ -545,7 +517,8 @@ function SecurityQuestionPage(props) {
     setOldAnswer('')
     setFund('')
     setGoogleCode('')
-    actions.notify(amount ? `${amount} ${currency} 已计入钱包，密保已恢复为未设置` : '两项凭据验证通过，密保已恢复为未设置', 'success')
+    setVerifiedUntil(0)
+    actions.notify(amount ? `${amount} ${currency} 模拟到账验证通过，密保已恢复为未设置` : '两项凭据验证通过，密保已恢复为未设置', 'success')
   }
 
   const openSecurityRecovery = () => {
@@ -554,7 +527,7 @@ function SecurityQuestionPage(props) {
   }
 
   return (
-    <PageShell title={recoveryOpen ? '找回密保' : securityConfigured ? '更换密保' : '设置密保'} onBack={recoveryOpen ? () => setRecoveryOpen(false) : actions.back} message={actions.localMessage}>
+    <PageShell title={recoveryOpen ? '找回密保' : securityConfigured ? '更换密保' : '设置密保'} onBack={recoveryOpen ? () => setRecoveryOpen(false) : stage === 'edit' ? returnToVerification : actions.back} message={actions.localMessage}>
       <StorefrontRequirementEntry path="/front/pages/security/security-question" />
       {recoveryOpen ? <>
         <Hint>找回密保有两种方式：使用“登录密码＋资金密码”固定组合验证，或使用绑定地址按指定金额充值验证。验证成功后旧密保清空并进入重新设置。</Hint>
@@ -575,25 +548,22 @@ function SecurityQuestionPage(props) {
         />}
       </> : stage === 'change' ? <>
         <Card className="sfa-security-form-card">
-          <SectionTitle>身份验证</SectionTitle>
+          <SectionTitle>验证原密保（原有）</SectionTitle>
           <SecurityQuestionDisplay profile={securityProfile} />
-          <Field label="当前密保答案" value={oldAnswer} onChange={setOldAnswer} placeholder="请输入当前答案" right={<button type="button" onClick={openSecurityRecovery}>忘记密保？</button>} />
-          <Segmented
-            items={[{ value: 'fund', label: '资金密码验证' }, ...(props.googleBound === false ? [] : [{ value: 'google', label: '谷歌验证' }])]}
-            value={verificationMode}
-            onChange={(value) => { setVerificationMode(value); setFund(''); setGoogleCode('') }}
-            compact
-          />
-          {verificationMode === 'fund'
-            ? <PasswordField label="资金密码" value={fund} onChange={(value) => setFund(value.replace(/\D/g, '').slice(0, 6))} placeholder="请输入6位资金密码" />
-            : <Field label="谷歌验证码" value={googleCode} onChange={(value) => setGoogleCode(value.replace(/\D/g, '').slice(0, 6))} placeholder="请输入6位谷歌验证码" />}
-          <Hint>当前密保答案与资金密码或谷歌验证码任选一组完成身份确认。</Hint>
+          <Field label="当前密保答案" value={oldAnswer} onChange={setOldAnswer} placeholder="请输入当前答案" right={<button type="button" onClick={openSecurityRecovery}>找回密保（新增）</button>} />
+          <PasswordField label="资金密码" value={fund} onChange={(v) => setFund(v.replace(/\D/g, '').slice(0, 6))} placeholder="请输入6位资金密码" />
+          <Hint>先验证当前密保答案＋资金密码，再填写新密保；已绑定谷歌时，在保存新密保时追加谷歌码。</Hint>
+          <PrimaryButton disabled={!verificationReady} onClick={verifyCurrentSecurity}>确定</PrimaryButton>
         </Card>
+      </> : stage === 'edit' ? <>
         <Card className="sfa-security-form-card">
-          <SectionTitle>设置新密保</SectionTitle>
+          <SectionTitle>设置新密保（原有）</SectionTitle>
+          <Hint tone="success">已通过原密保验证，请设置新的密保问题和答案。</Hint>
           <SelectField label="新密保问题" value={question} onClick={() => setQuestionSheet(true)} />
           <Field label="新密保答案" value={answer} onChange={setAnswer} placeholder="请输入新的密保答案" />
-          <Field label="新密保提示" value={tip} onChange={setTip} placeholder="请输入密保提示" />
+          <Field label="新密保提示（选填，不能与答案相同）" value={tip} onChange={setTip} placeholder="请输入密保提示" />
+          <Hint>新增校验要求：非空提示不能与答案相同。测试服原有流程允许相同，本原型演示的是待开发的新规则。</Hint>
+          {props.googleBound !== false ? <Field label="谷歌验证码" value={googleCode} onChange={(v) => setGoogleCode(v.replace(/\D/g, '').slice(0, 6))} placeholder="请输入6位谷歌码" /> : null}
           <div className="sfa-security-submit"><PrimaryButton disabled={!changeReady} onClick={saveNewSecurity}>确认更换</PrimaryButton></div>
         </Card>
       </> : <Card className="sfa-security-form-card">
@@ -601,8 +571,10 @@ function SecurityQuestionPage(props) {
         <SectionTitle>请选择密保问题</SectionTitle>
         <SelectField label="" value={question} onClick={() => setQuestionSheet(true)} />
         <Field label="密保答案" value={answer} onChange={setAnswer} placeholder="请输入新的密保答案" />
-        <Field label="密保提示" value={tip} onChange={setTip} placeholder="请输入密保提示" />
+        <Field label="密保提示（选填，不能与答案相同）" value={tip} onChange={setTip} placeholder="请输入密保提示" />
+        <Hint>新增校验要求：非空提示不能与答案相同；提示仍为选填。</Hint>
         {initialSetupNeedsFund ? <PasswordField label="资金密码" value={fund} onChange={(value) => setFund(value.replace(/\D/g, '').slice(0, 6))} placeholder="首次设置请输入6位资金密码" /> : null}
+        {props.googleBound !== false ? <Field label="谷歌验证码" value={googleCode} onChange={(v) => setGoogleCode(v.replace(/\D/g, '').slice(0, 6))} /> : null}
         <div className="sfa-security-submit"><PrimaryButton disabled={!setupReady} onClick={saveNewSecurity}>确定</PrimaryButton></div>
       </Card>}
       <button className="sfa-service-link" type="button" onClick={() => actions.go('/pages/service/index')}>如需帮助，请联系客服</button>
@@ -612,6 +584,7 @@ function SecurityQuestionPage(props) {
 }
 
 function OnboardingPage(props) {
+  const demo = useDemoSecurity()
   const actions = useSfaActions(props)
   const [step, setStep] = useState(1)
   const [form, setForm] = useState({ old: '', next: '', confirm: '', question: SECURITY_QUESTIONS[0], answer: '', tip: '', fund: '' })
@@ -620,201 +593,30 @@ function OnboardingPage(props) {
   const update = (key, value) => setForm((current) => ({ ...current, [key]: value }))
 
   const next = () => {
-    if (!form.old || form.next.length < 6 || form.next !== form.confirm) return actions.notify('请正确填写并确认新登录密码')
+    if (!demo.validLogin(form.old) || form.next.length < 6 || form.next.length > 20 || form.next !== form.confirm) return actions.notify('请正确填写并确认新登录密码')
+    demo.setLoginPassword(form.next)
     setStep(2)
     actions.notify('登录密码已修改，请继续设置安全信息', 'success')
   }
 
   const finish = () => {
     if (!form.answer.trim() || !/^\d{6}$/.test(form.fund)) return actions.notify('请完整填写密保和6位资金密码')
+    if (form.tip.trim() && form.tip.trim() === form.answer.trim()) return actions.notify('密保提示不能与答案相同')
+    if (props.googleBound === false) { completeSetup(); return }
     setGoogle(true)
+  }
+  const completeSetup = () => {
+    demo.setFundPassword(form.fund); demo.setFundConfigured(true)
+    props.setSecurityProfile?.({ configured: true, question: form.question, answer: form.answer.trim(), tip: form.tip.trim(), resetGranted: false })
+    actions.notify('安全设置完成', 'success'); actions.go('/pages/user/user')
   }
 
   return (
     <PageShell title="账户安全设置" subtitle={`步骤 ${step}/2`} onBack={actions.back} message={actions.localMessage} bottom={<PrimaryButton onClick={step === 1 ? next : finish}>{step === 1 ? '下一步' : '完成设置'}</PrimaryButton>}>
-      <Card className="sfa-step-card"><div className={step >= 1 ? 'is-active' : ''}><b>1</b><span>修改登录密码</span></div><i /><div className={step >= 2 ? 'is-active' : ''}><b>2</b><span>资金密码和密保</span></div></Card>
+      <StorefrontRequirementEntry path="/front/pages/security/onboarding" /><Card className="sfa-step-card"><div className={step >= 1 ? 'is-active' : ''}><b>1</b><span>修改登录密码</span></div><i /><div className={step >= 2 ? 'is-active' : ''}><b>2</b><span>资金密码和密保</span></div></Card>
       <Card>{step === 1 ? <><SectionTitle>修改初始登录密码</SectionTitle><PasswordField label="初始密码" value={form.old} onChange={(value) => update('old', value)} /><PasswordField label="新登录密码" value={form.next} onChange={(value) => update('next', value)} placeholder="请输入新登录密码（6-20位）" /><PasswordField label="确认新登录密码" value={form.confirm} onChange={(value) => update('confirm', value)} /></> : <><SectionTitle>设置资金密码和密保</SectionTitle><SelectField label="密保问题" value={form.question} onClick={() => setQuestions(true)} /><Field label="密保答案" value={form.answer} onChange={(value) => update('answer', value)} /><Field label="密保提示（可选）" value={form.tip} onChange={(value) => update('tip', value)} /><PasswordField label="资金密码" value={form.fund} onChange={(value) => update('fund', value.replace(/\D/g, '').slice(0, 6))} placeholder="请输入6位资金密码" /></>}</Card>
       <SelectSheet open={questions} title="选择密保问题" options={SECURITY_QUESTIONS} value={form.question} onClose={() => setQuestions(false)} onSelect={(value) => { update('question', value); setQuestions(false) }} />
-      <GoogleVerificationModal open={google} purpose="完成账户安全设置" onClose={() => setGoogle(false)} onVerified={() => { setGoogle(false); props.setSecurityProfile?.({ ...(props.securityProfile || {}), configured: true, question: form.question, answer: form.answer.trim(), tip: form.tip.trim(), resetGranted: false, updatedAt: new Date().toISOString() }); actions.notify('安全设置完成', 'success'); actions.go('/pages/user/user') }} />
-    </PageShell>
-  )
-}
-
-function GoogleAuthenticatorPage(props) {
-  const actions = useSfaActions(props)
-  const initialBound = props.googleBound ?? props.initialBound ?? true
-  const openRecoveryFromLogin = String(props.path || '').includes('recovery=1')
-  const recoveryAccountFromQuery = new URLSearchParams(String(props.path || '').split('?')[1] || '').get('account') || ''
-  const [bound, setBound] = useState(Boolean(initialBound))
-  const [step, setStep] = useState(bound ? 'manage' : 'bind')
-  const [form, setForm] = useState({ fund: '', answer: '', login: '', oldCode: '', newCode: '' })
-  const [recoveryAccount, setRecoveryAccount] = useState(recoveryAccountFromQuery)
-  const recoveryEntryHandled = useRef(false)
-  const securityProfile = props.securityProfile || {}
-  const googleRecoveryCredentials = recoveryCredentialsFor('google', {
-    securityConfigured: Boolean(securityProfile.configured && securityProfile.answer),
-    googleBound: bound,
-  })
-  const [recoveryMethod, setRecoveryMethod] = useState(recoveryCredentialPairAvailable(googleRecoveryCredentials) ? 'credentials' : 'transfer')
-  const secret = 'G6DE MOSE CRET 2026'
-  const update = (key, value) => setForm((current) => ({ ...current, [key]: value }))
-  const clearForm = () => setForm({ fund: '', answer: '', login: '', oldCode: '', newCode: '' })
-
-  useEffect(() => {
-    if (typeof props.googleBound !== 'boolean') return
-    setBound(props.googleBound)
-    setStep(props.googleBound ? 'manage' : 'bind')
-    clearForm()
-  }, [props.googleBound])
-
-  useEffect(() => {
-    if (openRecoveryFromLogin && bound && !recoveryEntryHandled.current) {
-      recoveryEntryHandled.current = true
-      setStep('unbind')
-    }
-  }, [bound, openRecoveryFromLogin])
-
-  const updateBound = (nextBound) => {
-    setBound(nextBound)
-    props.setGoogleBound?.(nextBound)
-  }
-
-  const validateFundAndSecurity = () => {
-    if (!/^\d{6}$/.test(form.fund)) {
-      actions.notify('请输入6位资金密码')
-      return false
-    }
-    if (!form.answer.trim()) {
-      actions.notify('请输入密保答案')
-      return false
-    }
-    if (!securityProfile.configured || !securityProfile.answer) {
-      actions.notify('当前未设置密保，请先完成密保设置')
-      return false
-    }
-    if (!answerMatches(securityProfile, form.answer)) {
-      actions.notify('密保答案不正确')
-      return false
-    }
-    return true
-  }
-
-  const bindGoogle = () => {
-    if (!validateFundAndSecurity()) return
-    if (!/^\d{6}$/.test(form.newCode)) return actions.notify('请输入新谷歌验证器显示的6位验证码')
-    updateBound(true)
-    setStep('manage')
-    clearForm()
-    actions.notify('资金密码、密保和新谷歌验证码均已通过，绑定成功', 'success')
-  }
-
-  const changeGoogle = () => {
-    if (!validateFundAndSecurity()) return
-    if (!/^\d{6}$/.test(form.oldCode)) return actions.notify('请输入旧谷歌验证器的6位验证码')
-    if (!/^\d{6}$/.test(form.newCode)) return actions.notify('请输入新谷歌验证器的6位验证码')
-    if (form.oldCode === form.newCode) return actions.notify('新旧谷歌验证码不能相同')
-    setStep('manage')
-    clearForm()
-    actions.notify('资金密码、密保及新旧谷歌验证码验证通过，更换成功', 'success')
-  }
-
-  const validateRecoveryAccount = () => {
-    if (!openRecoveryFromLogin) return true
-    if (!/^[A-Za-z0-9]{6,16}$/.test(recoveryAccount.trim())) {
-      actions.notify('请输入6-16位字母或数字会员账号')
-      return false
-    }
-    return true
-  }
-
-  const finishGoogleRecovery = ({ amount, currency } = {}) => {
-    updateBound(false)
-    setStep('bind')
-    clearForm()
-    actions.notify(amount ? `${amount} ${currency} 已计入钱包，谷歌验证已恢复为未绑定` : '两项凭据验证通过，谷歌验证已恢复为未绑定', 'success')
-  }
-
-  const verifyGoogleCredentialPair = (payload) => {
-    if (!validateRecoveryAccount()) return false
-    return validateRecoveryCredentialValues(payload, securityProfile, actions.notify)
-  }
-
-  const cancelManageAction = () => {
-    clearForm()
-    setStep(bound ? 'manage' : 'bind')
-    actions.notify('已取消本次操作')
-  }
-
-  const cancelGoogleRecovery = () => {
-    if (openRecoveryFromLogin) {
-      actions.back()
-      return
-    }
-    cancelManageAction()
-  }
-
-  return (
-    <PageShell title={step === 'unbind' ? '找回/解绑谷歌验证' : '谷歌验证器'} onBack={step === 'unbind' ? cancelGoogleRecovery : actions.back} message={actions.localMessage}>
-      <StorefrontRequirementEntry path="/front/pages/security/google-authenticator" />
-      {step === 'bind' ? <>
-        <Card className="sfa-security-intro"><div className="sfa-security-emblem"><ShieldCheck size={31} /></div><h2>绑定谷歌验证器</h2><p>使用验证器扫描二维码，再同时验证资金密码、密保答案和新谷歌验证码。</p></Card>
-        <Card className="sfa-google-setup">
-          <SectionTitle>扫描新验证器二维码</SectionTitle>
-          <QrPlaceholder label="G6哈希演示" />
-          <CopyLine label="手工输入密钥" value={secret} onCopy={() => actions.copy(secret, '演示密钥')} />
-          <PasswordField label="资金密码" value={form.fund} onChange={(value) => update('fund', value.replace(/\D/g, '').slice(0, 6))} placeholder="请输入6位资金密码" right={<button type="button" onClick={() => actions.go('/pages/security/recharge-password?recover=1')}>忘记密码？</button>} />
-          <SecurityQuestionDisplay profile={securityProfile} />
-          <Field label="密保答案" value={form.answer} onChange={(value) => update('answer', value)} placeholder="请输入密保答案" right={<button type="button" onClick={() => actions.go('/pages/security/security-question')}>忘记密保？</button>} />
-          <Field label="新谷歌验证码" value={form.newCode} onChange={(value) => update('newCode', value.replace(/\D/g, '').slice(0, 6))} placeholder="请输入新验证器显示的6位验证码" />
-          <PrimaryButton onClick={bindGoogle}>确认绑定</PrimaryButton>
-        </Card>
-      </> : null}
-
-      {step === 'manage' ? <>
-        <Card className="sfa-security-banner"><div className="sfa-security-emblem"><ShieldCheck size={31} /></div><div><strong>谷歌验证器已绑定</strong><small>账户动态验证保护已开启</small></div><Badge tone="success">已绑定</Badge></Card>
-        <Card className="sfa-action-list">
-          <ActionRow title="更换谷歌验证器" subtitle="需资金密码、密保答案及新旧谷歌验证码" onClick={() => { clearForm(); setStep('change') }} />
-          <ActionRow title="重置/解绑谷歌验证" subtitle="双凭据验证或绑定地址充值验证，成功后恢复未绑定" danger onClick={() => { clearForm(); setRecoveryMethod(recoveryCredentialPairAvailable(googleRecoveryCredentials) ? 'credentials' : 'transfer'); setStep('unbind') }} />
-        </Card>
-        <Hint>无法使用旧验证器时，可使用“密保答案＋资金密码”固定组合验证，或使用绑定地址充值验证。</Hint>
-      </> : null}
-
-      {step === 'change' ? <Card className="sfa-google-setup">
-        <SectionTitle>更换谷歌验证器</SectionTitle>
-        <QrPlaceholder label="新谷歌验证器" />
-        <CopyLine label="新验证器演示密钥" value={secret} onCopy={() => actions.copy(secret, '新演示密钥')} />
-        <PasswordField label="资金密码" value={form.fund} onChange={(value) => update('fund', value.replace(/\D/g, '').slice(0, 6))} placeholder="请输入6位资金密码" />
-        <SecurityQuestionDisplay profile={securityProfile} />
-        <Field label="密保答案" value={form.answer} onChange={(value) => update('answer', value)} placeholder="请输入密保答案" />
-        <Field label="旧谷歌验证码" value={form.oldCode} onChange={(value) => update('oldCode', value.replace(/\D/g, '').slice(0, 6))} placeholder="请输入旧验证器显示的6位验证码" />
-        <Field label="新谷歌验证码" value={form.newCode} onChange={(value) => update('newCode', value.replace(/\D/g, '').slice(0, 6))} placeholder="请输入新验证器显示的6位验证码" />
-        <PrimaryButton onClick={changeGoogle}>确认更换</PrimaryButton>
-        <GhostButton onClick={cancelManageAction}>取消</GhostButton>
-      </Card> : null}
-
-      {step === 'unbind' ? <>
-        {openRecoveryFromLogin ? <Card className="sfa-security-form-card">
-          <Field label="会员账号" value={recoveryAccount} onChange={(value) => setRecoveryAccount(value.replace(/[^A-Za-z0-9]/g, '').slice(0, 16))} placeholder="请输入6-16位会员账号" />
-        </Card> : null}
-        <Hint tone="warning">找回谷歌验证提供两条独立路径：固定验证“密保答案＋资金密码”，或使用绑定地址充值验证；成功后只恢复为未绑定状态。</Hint>
-        <Segmented items={[{ value: 'credentials', label: '双凭据找回' }, { value: 'transfer', label: '绑定地址充值找回' }]} value={recoveryMethod} onChange={setRecoveryMethod} />
-        {recoveryMethod === 'credentials' ? <CredentialPairRecoveryPanel
-          identityKey={`google-recovery-${recoveryAccount || 'current-member'}`}
-          targetLabel="谷歌验证"
-          availableCredentials={googleRecoveryCredentials}
-          actionText="验证并解绑谷歌验证"
-          beforeVerify={verifyGoogleCredentialPair}
-          onVerified={finishGoogleRecovery}
-        /> : <SecurityRecoveryPanel
-          identityKey={`google-recovery-${recoveryAccount || 'current-member'}`}
-          title="绑定地址充值找回"
-          purpose="演示到账后将谷歌验证恢复为未绑定状态"
-          actionText="我已转账并解绑谷歌验证"
-          beforeVerify={validateRecoveryAccount}
-          onVerified={finishGoogleRecovery}
-        />}
-        <GhostButton onClick={cancelGoogleRecovery}>取消</GhostButton>
-      </> : null}
+      <GoogleVerificationModal open={google} purpose="完成账户安全设置" onClose={() => setGoogle(false)} onVerified={() => { setGoogle(false); completeSetup() }} />
     </PageShell>
   )
 }

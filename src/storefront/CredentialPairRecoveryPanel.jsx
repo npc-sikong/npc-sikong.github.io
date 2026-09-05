@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { CheckCircle2, ShieldCheck } from 'lucide-react'
 import { Field, Hint, PrimaryButton } from './accountUi'
 import './credential-pair-recovery.css'
+import { useDemoSecurity } from './DemoSecurityContext'
 
 function normalizeValue(credential, value) {
   if (credential.type === 'fund' || credential.type === 'google') return value.replace(/\D/g, '').slice(0, 6)
@@ -26,6 +27,7 @@ export default function CredentialPairRecoveryPanel({
   beforeVerify,
   identityKey = 'current-member',
 }) {
+  const demo = useDemoSecurity()
   const fixedCredentials = useMemo(() => availableCredentials.slice(0, 2), [availableCredentials])
   const credentialSignature = fixedCredentials.map((credential) => credential.key).join('+')
   const [values, setValues] = useState({})
@@ -33,6 +35,8 @@ export default function CredentialPairRecoveryPanel({
   const [verified, setVerified] = useState(false)
   const [message, setMessage] = useState('')
   const timerRef = useRef(null)
+  const callbacks = useRef({ beforeVerify, onVerified })
+  callbacks.current = { beforeVerify, onVerified }
 
   useEffect(() => {
     window.clearTimeout(timerRef.current)
@@ -74,15 +78,18 @@ export default function CredentialPairRecoveryPanel({
       values: Object.fromEntries(selectedKeys.map((key) => [key, values[key] || ''])),
     }
     if (beforeVerify?.(payload) === false) return
+    if (selectedKeys.includes('login') && !demo.validLogin(values.login)) { setMessage('登录密码不正确'); return }
+    if (selectedKeys.includes('fund') && !demo.validFund(values.fund)) { setMessage('资金密码不正确或尚未设置'); return }
 
     setChecking(true)
     setMessage('正在核验两项凭据…')
     window.clearTimeout(timerRef.current)
     timerRef.current = window.setTimeout(() => {
       setChecking(false)
+      if (callbacks.current.beforeVerify?.(payload) === false) return
       setVerified(true)
       setMessage('两项凭据验证通过')
-      onVerified?.(payload)
+      callbacks.current.onVerified?.(payload)
     }, 420)
   }
 

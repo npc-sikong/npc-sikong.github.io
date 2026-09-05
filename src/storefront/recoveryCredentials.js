@@ -26,10 +26,10 @@ export const RECOVERY_CREDENTIALS = {
 }
 
 const TARGET_CREDENTIAL_KEYS = {
-  login: ['security', 'fund'],
+  login: ['security'],
   security: ['login', 'fund'],
   fund: ['security', 'login'],
-  google: ['security', 'fund'],
+  google: [],
 }
 
 export function recoveryCredentialsFor(target, { securityConfigured = false } = {}) {

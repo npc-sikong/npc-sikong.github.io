@@ -1,3 +1,4 @@
+import { DemoSecurityProvider } from './DemoSecurityContext'
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AlertTriangle, ArrowLeftRight, ChevronLeft, Headphones, ShieldCheck } from 'lucide-react'
 import {
@@ -248,10 +249,10 @@ export default function StorefrontApp({
           <span>返回运营后台</span>
         </button>
       </div>
-      <div className="storefront-page-stage" ref={pageStageRef}>
+      <DemoSecurityProvider><div className="storefront-page-stage" ref={pageStageRef}>
         <StorefrontPage route={route} targetPath={targetPath} search={search} navigate={navigate} notify={notify} securityProfile={securityProfile} setSecurityProfile={setSecurityProfile} googleBound={googleBound} setGoogleBound={setGoogleBound} />
       </div>
-      <Toast open={Boolean(toast)} message={toast?.message} type={toast?.type} zIndex={2400} />
+      </DemoSecurityProvider><Toast open={Boolean(toast)} message={toast?.message} type={toast?.type} zIndex={2400} />
     </div>
   )
 }
