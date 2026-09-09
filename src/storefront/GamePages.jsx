@@ -13,6 +13,10 @@ import {
 } from './gameData.js'
 import { getModuleRequirement } from '../requirements.js'
 import './game-pages.css'
+import './lottery-betting.css'
+import BlockLotteryCatalog, { BLOCK_LOTTERIES } from './BlockLotteryCatalog'
+import ExistingLotteryChasePage from './LotteryChasePage'
+import { ProductionPlayPicker, ProductionDialog, ProductionDraws, ProductionTrend, ProductionOrders, GROUP_PLAYS } from './ProductionLotteryControls'
 
 const LOTTERY_FAMILIES = [
   { family: '时时彩', plays: ['五星直选 · 复式', '五星组选 · 组选120', '前三直选 · 和值', '后二组选 · 复式', '一星定位胆'] },
@@ -312,25 +316,26 @@ export function HashGamePage(props) {
   return currentPath(props.path).split('?')[0] === '/pages/hash/detail' ? <HashGameDetailEntry {...props} /> : <HashGamePlayPage {...props} />
 }
 
-function LotteryBalls({ selected, setSelected, showHot, showOmit, disabled }) {
+function LotteryBalls({ selected, setSelected, showHot, showOmit, disabled, positions = LOTTERY_POSITION_NAMES, numbers = LOTTERY_NUMBERS, activeRows = positions.map((_,i)=>i), padded = false }) {
   const toggleNumber = (rowIndex, number) => {
     if (disabled) return
     setSelected((rows) => rows.map((row, index) => index !== rowIndex ? row : row.includes(number) ? row.filter((item) => item !== number) : [...row, number].sort((a, b) => a - b)))
   }
   const quickPick = (rowIndex, type) => {
     if (disabled) return
-    const picks = type === '全' ? LOTTERY_NUMBERS : type === '大' ? [5, 6, 7, 8, 9] : type === '小' ? [0, 1, 2, 3, 4] : type === '奇' ? [1, 3, 5, 7, 9] : type === '偶' ? [0, 2, 4, 6, 8] : []
+    const mid = numbers[Math.floor(numbers.length / 2)]
+    const picks = type === '全' ? numbers : type === '大' ? numbers.filter(n=>n>=mid) : type === '小' ? numbers.filter(n=>n<mid) : type === '单' ? numbers.filter(n=>n%2) : type === '双' ? numbers.filter(n=>!(n%2)) : []
     setSelected((rows) => rows.map((row, index) => index === rowIndex ? picks : row))
   }
-  return <div className={`sfg-number-board ${disabled ? 'sfg-disabled' : ''}`}>{LOTTERY_POSITION_NAMES.map((position, rowIndex) => <div className="sfg-number-row" key={position}><div className="sfg-position-label"><b>{position}</b><small>{selected[rowIndex].length}码</small></div><div className="sfg-number-content"><div className="sfg-number-balls">{LOTTERY_NUMBERS.map((number) => <button key={number} className={selected[rowIndex].includes(number) ? 'sfg-selected' : ''} onClick={() => toggleNumber(rowIndex, number)}><b>{number}</b>{showHot && <small>{[8, 12, 5, 19, 7, 14, 3, 11, 6, 16][(rowIndex + number) % 10]}</small>}{showOmit && <em>{[2, 0, 4, 1, 7, 3, 9, 2, 5, 6][(rowIndex * 2 + number) % 10]}</em>}</button>)}</div><div className="sfg-quick-picks">{['全', '大', '小', '奇', '偶', '清'].map((type) => <button key={type} onClick={() => quickPick(rowIndex, type)}>{type}</button>)}</div></div></div>)}</div>
+  return <div className={`sfg-number-board ${disabled ? 'sfg-disabled' : ''}`}>{activeRows.map((rowIndex) => <div className="sfg-number-row" key={rowIndex}><div className="sfg-position-label"><b>{positions[rowIndex].replace(/^([万千百十个])位$/, '$1')}</b><small>{selected[rowIndex].length}码</small></div><div className="sfg-number-content"><div className="sfg-number-balls">{numbers.map((number) => <button key={number} className={selected[rowIndex].includes(number) ? 'sfg-selected' : ''} onClick={() => toggleNumber(rowIndex, number)}><b>{padded ? String(number).padStart(2,'0') : number}</b>{showHot && <small>{[8, 12, 5, 19, 7, 14, 3, 11, 6, 16][(rowIndex + number) % 10]}</small>}{showOmit && <em>{[2, 0, 4, 1, 7, 3, 9, 2, 5, 6][(rowIndex * 2 + number) % 10]}</em>}</button>)}</div><div className="sfg-quick-picks">{['大', '小', '单', '双', '全', '清'].map((type) => <button key={type} onClick={() => quickPick(rowIndex, type)}>{type}</button>)}</div></div></div>)}</div>
 }
 
 function LotteryPlaySheet({ open, selectedFamily, setSelectedFamily, play, onChoose, onClose }) {
   return <Sheet title={open ? '选择玩法' : ''} full onClose={onClose}><div className="sfg-play-picker"><aside>{LOTTERY_FAMILIES.map((item) => <button className={selectedFamily === item.family ? 'sfg-active' : ''} key={item.family} onClick={() => setSelectedFamily(item.family)}>{item.family}</button>)}</aside><div>{LOTTERY_FAMILIES.find((item) => item.family === selectedFamily)?.plays.map((item) => <button className={play === item ? 'sfg-selected' : ''} key={item} onClick={() => onChoose(item)}><span><b>{item.split(' · ')[0]}</b><small>{item.includes(' · ') ? item.split(' · ')[1] : '标准玩法'}</small></span>{play === item && <Check size={17} />}</button>)}</div></div></Sheet>
 }
 
-function LotteryHeader({ lottery, setSheet, navigate }) {
-  return <H5Header title={lottery.name} onBack={() => callNavigate(navigate, '/pages/home/index')} titleMenu={() => setSheet('lotteries')} right={<div className="sfg-header-tools"><button onClick={() => callNavigate(navigate, '/pages/lottery/long-dragon')}><Flame size={18} /><small>长龙</small></button><button onClick={() => callNavigate(navigate, '/pages/lottery/chase')}><Layers3 size={18} /><small>追号</small></button></div>} />
+function LotteryHeader({ lottery, setSheet, navigate, notify }) {
+  return <H5Header title={lottery.name} onBack={() => callNavigate(navigate, '/pages/index/index?tab=lottery')} titleMenu={() => setSheet('lotteries')} right={<div className="sfg-lottery-wallet"><span><i>₮</i>0.00</span><button aria-label="刷新余额" onClick={() => notify('演示余额已刷新：0.00 USDT')}><RefreshCw size={15} /></button><button className="sfg-lottery-recharge" onClick={() => callNavigate(navigate, '/pages/deposit/index')}><WalletCards size={15} />充值</button></div>} />
 }
 
 function LotteryDrawTab({ onVerify, notify }) {
@@ -343,28 +348,30 @@ function LotteryOrdersTab({ orders, navigate, notify }) {
 
 function LotteryTrendTab({ setSheet, trendPlay }) {
   const [period, setPeriod] = useState(30)
-  return <section className="sfg-card sfg-lottery-trend"><button className="sfg-trend-play" onClick={() => setSheet('trendPlay')}><span><b>{trendPlay}</b><small>点击切换走势玩法</small></span><ChevronDown size={17} /></button><div className="sfg-period-tabs">{[30, 50, 100].map((item) => <button className={period === item ? 'sfg-active' : ''} key={item} onClick={() => setPeriod(item)}>近{item}期</button>)}</div><div className="sfg-trend-grid"><div className="sfg-trend-grid-head"><span>期号</span>{LOTTERY_NUMBERS.map((number) => <b key={number}>{number}</b>)}</div>{LOTTERY_RESULTS.map((item, row) => <div className="sfg-trend-grid-row" key={item.issue}><span>{item.issue.slice(-4)}</span>{LOTTERY_NUMBERS.map((number) => <i className={item.numbers.includes(number) ? 'sfg-hit' : ''} key={number}>{item.numbers.includes(number) ? number : ((row + number) % 9) + 1}</i>)}</div>)}</div></section>
+  return <section className="sfg-card sfg-lottery-trend"><button className="sfg-trend-play" onClick={() => setSheet('trendPlay')}><span><b>{trendPlay}</b><small>点击切换走势玩法</small></span><ChevronDown size={17} /></button><div className="sfg-period-tabs">{[30, 50, 100].map((item) => <button className={period === item ? 'sfg-active' : ''} key={item} onClick={() => setPeriod(item)}>近{item}期</button>)}</div><div className="sfg-trend-grid"><div className="sfg-trend-grid-head"><span>期号</span>{LOTTERY_NUMBERS.map((number) => <b key={number}>{number}</b>)}</div>{gameResults.map((item, row) => <div className="sfg-trend-grid-row" key={item.issue}><span>{item.issue.slice(-4)}</span>{LOTTERY_NUMBERS.map((number) => <i className={item.numbers.includes(number) ? 'sfg-hit' : ''} key={number}>{item.numbers.includes(number) ? number : ((row + number) % 9) + 1}</i>)}</div>)}</div></section>
 }
 
 export function LotteryGamePage({ path, navigate, toast, loading = false, sealed: sealedProp }) {
   const route = currentPath(path)
-  const pageRequirement = route.split('?')[0] === '/pages/lottery/tron-minute' ? getModuleRequirement('/front/pages/lottery/tron-minute') : null
+  const pageRequirement = getModuleRequirement('/front/pages/lottery/tron-minute')
   const defaultSealed = route.split('?')[0] === '/pages/lottery/game'
   const sealed = sealedProp ?? defaultSealed
-  const lottery = LOTTERY_GAMES.find((item) => route.includes(item.path.split('?')[0])) || LOTTERY_GAMES[0]
+  const requestedLottery = new URLSearchParams(route.split('?')[1] || '').get('lottery')
+  const lottery = BLOCK_LOTTERIES.find((item) => item.name === requestedLottery) || LOTTERY_GAMES.find((item) => item.path === route) || BLOCK_LOTTERIES[0]
   const countdown = useCountdown(lottery.cycle)
   const [notice, notify] = usePageFeedback(toast)
   const [sheet, setSheet] = useState('')
   const [tab, setTab] = useState('投注')
-  const [play, setPlay] = useState('五星直选 · 复式')
+  const [play, setPlay] = useState(lottery.group === '六合彩' ? '特码A' : lottery.group === 'PC28' ? '2.0模式-和值' : lottery.group === '快三' ? '快三和值' : '一星定位胆')
   const [family, setFamily] = useState('时时彩')
-  const [selected, setSelected] = useState(() => LOTTERY_POSITION_NAMES.map(() => []))
+  const [selected, setSelected] = useState(() => Array.from({length:10},()=>[]))
   const [showHot, setShowHot] = useState(false)
   const [showOmit, setShowOmit] = useState(false)
   const [displayDraft, setDisplayDraft] = useState({ hot: false, omit: false })
   const [multiplier, setMultiplier] = useState(1)
   const [unit, setUnit] = useState(1)
   const [basket, setBasket] = useState([])
+  const [basketChase, setBasketChase] = useState('')
   const [orders, setOrders] = useState(LOTTERY_ORDERS)
   const [verifyResult, setVerifyResult] = useState(null)
   const [guideTab, setGuideTab] = useState('玩法')
@@ -372,12 +379,21 @@ export function LotteryGamePage({ path, navigate, toast, loading = false, sealed
   const [quickAmounts, setQuickAmounts] = useState(['10', '20', '50', '100', '500'])
   const [sourceGame, setSourceGame] = useState(lottery)
   const [pendingBet, setPendingBet] = useState(null)
+  const [sound, setSound] = useState(false)
+  const [volume, setVolume] = useState(30)
+  const [totalInput, setTotalInput] = useState('')
+  useEffect(() => { setSourceGame(lottery); setSelected(Array.from({length:10},()=>[])); setPlay(lottery.group === '六合彩' ? '特码A' : lottery.group === 'PC28' ? '2.0模式-和值' : lottery.group === '快三' ? '快三和值' : '一星定位胆') }, [lottery.name])
   const basketSequence = useRef(1)
   const orderSequence = useRef(1)
   const limitNoticeShown = useRef(false)
   const betSubmissionLocked = useRef(false)
   const betTimer = useRef(null)
-  const count = useMemo(() => selected.every((row) => row.length) ? selected.reduce((total, row) => total * row.length, 1) : 0, [selected])
+  const directionOptions = /龙虎/.test(play) ? (play.includes('和') ? ['龙','虎','和'] : ['龙','虎']) : play.includes('大小单双') ? ['大','小','单','双','大单','大双','小单','小双'] : play.includes('大小') ? ['大','小'] : play.includes('单双') ? ['单','双'] : []
+  const positions = directionOptions.length ? [play] : lottery.group === '六合彩' ? ['特码'] : lottery.group === 'PC28' ? ['和值'] : lottery.group === '低频彩' ? ['百位','十位','个位'] : lottery.group === '快三' ? [play === '快三和值' ? '和值' : play] : lottery.group === 'PK10' ? ['冠军','亚军','季军','第四名','第五名','第六名','第七名','第八名','第九名','第十名'] : lottery.group === '11选5' ? ['第一位','第二位','第三位','第四位','第五位'] : LOTTERY_POSITION_NAMES
+  const ballNumbers = lottery.group === '六合彩' ? Array.from({length:49},(_,i)=>i+1) : lottery.group === 'PC28' ? Array.from({length:28},(_,i)=>i) : lottery.group === '快三' ? play === '快三和值' ? Array.from({length:16},(_,i)=>i+3) : [1,2,3,4,5,6] : lottery.group === 'PK10' || lottery.group === '11选5' ? Array.from({length:lottery.group === '11选5'?11:10},(_,i)=>i+1) : LOTTERY_NUMBERS
+  const gameResults = LOTTERY_RESULTS.map((row,index) => ({...row, issue:String(Number(lottery.issue)-1-index),numbers:lottery.group==='六合彩'?Array.from({length:7},(_,i)=>(i*7+index)%49+1):lottery.group==='PC28'||lottery.group==='低频彩'?row.numbers.slice(0,3):lottery.group==='快三'?[index%6+1,(index+2)%6+1,(index+4)%6+1]:lottery.group==='PK10'?Array.from({length:10},(_,i)=>(i+index*3)%10+1):lottery.group==='11选5'?Array.from({length:5},(_,i)=>(i*2+index)%11+1):row.numbers}))
+  const activeRows = play.startsWith('前三') ? [0,1,2] : play.startsWith('中三') ? [1,2,3] : play.startsWith('后三') ? [2,3,4] : play.startsWith('前二') ? [0,1] : play.startsWith('后二') ? [3,4] : play.startsWith('后四') ? [1,2,3,4] : play.startsWith('前四') || play.startsWith('四星') ? [0,1,2,3] : positions.map((_,i)=>i)
+  const count = play.includes('定位胆') ? activeRows.reduce((total,i)=>total+selected[i].length,0) : activeRows.every(i=>selected[i].length) ? activeRows.reduce((total,i)=>total*selected[i].length,1) : 0
   const rawAmount = count * 2 * multiplier * unit
   const amount = Math.min(rawAmount, LOTTERY_BET_LIMIT)
   const rawBasketAmount = basket.reduce((sum, item) => sum + item.amount, 0)
@@ -395,8 +411,8 @@ export function LotteryGamePage({ path, navigate, toast, loading = false, sealed
   useEffect(() => () => {
     if (betTimer.current) window.clearTimeout(betTimer.current)
   }, [])
-  const resetPicks = () => setSelected(LOTTERY_POSITION_NAMES.map(() => []))
-  const selectionText = selected.map((row, index) => row.length ? `${LOTTERY_POSITION_NAMES[index]} ${row.join('')}` : '').filter(Boolean).join(' / ')
+  const resetPicks = () => setSelected(Array.from({length:10},()=>[]))
+  const selectionText = selected.map((row, index) => row.length ? `${positions[index]} ${row.join(' ')}` : '').filter(Boolean).join(' / ')
   const addBasket = () => {
     if (!count) { notify('请先完成号码选择', 'error'); return }
     const basketId = `BDEMO${String(basketSequence.current++).padStart(3, '0')}`
@@ -434,38 +450,41 @@ export function LotteryGamePage({ path, navigate, toast, loading = false, sealed
     }, 650)
   }
   return (
-    <main className="sfg-page sfg-lottery-page">
-      <LotteryHeader lottery={sourceGame} setSheet={setSheet} navigate={navigate} />
+    <><main className={`sfg-page sfg-lottery-page ${tab === '注单' ? 'sfg-production-record-mode' : ''}`}>
+      <LotteryHeader lottery={sourceGame} setSheet={setSheet} navigate={navigate} notify={notify} />
       <PageNotice message={notice} />
-      {pageRequirement && <button className="sfg-requirement-entry" type="button" onClick={() => setSheet('requirement')}><span>业务及需求说明</span><em>({pageRequirement.changeType})</em><small>{pageRequirement.completedAt}</small></button>}
       <nav className="sfg-lottery-tabs">{['投注', '开奖', '注单', '走势'].map((item) => <button className={tab === item ? 'sfg-active' : ''} key={item} onClick={() => setTab(item)}>{item}</button>)}</nav>
+        <section className="sfg-lottery-issue"><small>距{lottery.issue.slice(-4)}期开奖</small><button className="sfg-link" onClick={() => setSheet('sound')}><Volume2 size={12} />设置</button><div className="sfg-lottery-clock"><strong>{sealed ? '已封盘' : `00:${String(Math.floor(countdown / 60)).padStart(2, '0')}:${String(countdown % 60).padStart(2, '0')}`}</strong></div><div className="sfg-last-numbers">{gameResults[0].numbers.map((number, index) => <i className={number % 2 ? 'odd' : ''} key={index}>{number}</i>)}</div><button className="sfg-lottery-last-issue" onClick={() => setTab('开奖')}>第{gameResults[0].issue}期开奖⌄</button></section>
       {tab === '投注' && <>
-        <section className="sfg-lottery-issue"><div><small>第 {lottery.issue} 期</small><b>{sealed ? '本期已封盘' : '投注进行中'}</b></div><div className="sfg-lottery-clock"><Clock3 size={17} /><strong>{String(Math.floor(countdown / 60)).padStart(2, '0')}:{String(countdown % 60).padStart(2, '0')}</strong></div><div className="sfg-last-numbers">{LOTTERY_RESULTS[0].numbers.map((number, index) => <i key={`${number}-${index}`}>{number}</i>)}</div></section>
         <section className="sfg-card sfg-lottery-toolbar">
-          <button className="sfg-play-main" onClick={() => setSheet('plays')}><span><small>当前玩法</small><b>{play}</b></span><ChevronRight size={17} /></button>
+          <ProductionPlayPicker key={lottery.name} plays={GROUP_PLAYS[lottery.group]} play={play} onChoose={(value) => { setPlay(value); resetPicks() }} />
           <div className="sfg-tool-row"><button onClick={() => setSheet('guide')}><CircleHelp size={16} />玩法介绍</button><button onClick={() => setSheet('source')}><FileCheck2 size={16} />来源</button><button className={showHot ? 'sfg-active' : ''} onClick={() => setShowHot((value) => !value)}><Flame size={16} />冷热</button><button className={showOmit ? 'sfg-active' : ''} onClick={() => setShowOmit((value) => !value)}><BarChart3 size={16} />遗漏</button><button aria-label="显示设置" onClick={() => { setDisplayDraft({ hot: showHot, omit: showOmit }); setSheet('displaySettings') }}><Settings2 size={16} /></button></div>
         </section>
-        {loading ? <section className="sfg-card sfg-loading-card"><LoaderCircle className="sfg-spin" size={30} /><b>正在加载当前期数据</b><span>请稍候</span></section> : <LotteryBalls selected={selected} setSelected={setSelected} showHot={showHot} showOmit={showOmit} disabled={sealed} />}
+        {loading ? <section className="sfg-card sfg-loading-card"><LoaderCircle className="sfg-spin" size={30} /><b>正在加载当前期数据</b><span>请稍候</span></section> : directionOptions.length ? <section className="sfg-production-directions"><h3>{play}</h3><div>{directionOptions.map(value=><button key={value} className={selected[0].includes(value)?'selected':''} onClick={()=>setSelected(rows=>rows.map((row,i)=>i===0?(row.includes(value)?row.filter(n=>n!==value):[...row,value]):row))}>{value}</button>)}</div></section> : lottery.group === '六合彩' ? <div className="sfg-production-mark-six">{ballNumbers.map((number)=><button className={selected[0].includes(number)?'selected':''} key={number} onClick={()=>setSelected(rows=>rows.map((row,i)=>i===0?(row.includes(number)?row.filter(n=>n!==number):[...row,number]):row))}><i className={number%3===0?'green':number%3===1?'red':'blue'}>{String(number).padStart(2,'0')}</i><small>45.527</small></button>)}</div> : <LotteryBalls positions={positions} activeRows={activeRows} numbers={ballNumbers} padded={ballNumbers[0] === 1} selected={selected} setSelected={setSelected} showHot={showHot} showOmit={showOmit} disabled={sealed} />}
         {sealed && <div className="sfg-sealed-tip"><Clock3 size={17} /><span>当前期已封盘，请等待下一期开启</span><button onClick={() => notify('正在等待下一期演示数据')}>刷新</button></div>}
-        <section className="sfg-card sfg-lottery-amount"><div className="sfg-multiplier"><span>倍数</span><button onClick={() => setMultiplier(Math.max(1, multiplier - 1))}><Minus size={15} /></button><input value={multiplier} inputMode="numeric" onChange={(event) => setMultiplier(Math.max(1, Number(event.target.value) || 1))} /><button onClick={() => setMultiplier(multiplier + 1)}><Plus size={15} /></button></div><div className="sfg-unit-picker">{[[1, '元'], [0.1, '角'], [0.01, '分']].map(([value, label]) => <button className={unit === value ? 'sfg-active' : ''} key={value} onClick={() => setUnit(value)}>{label}</button>)}</div><button className="sfg-link" onClick={() => setSheet('quickAmounts')}><Settings2 size={13} />编辑快捷金额</button></section>
-        <div className="sfg-lottery-betbar"><button className="sfg-basket-button" onClick={() => setSheet('basket')}><ShoppingCart size={21} /><small>采购篮</small>{basket.length > 0 && <i>{basket.length}</i>}</button><div><span>共 <b>{count}</b> 注</span><strong>{amount.toFixed(2)} USDT</strong></div><button className="sfg-button sfg-button-soft" disabled={!count || sealed} onClick={addBasket}>添加选号</button><button className="sfg-button sfg-button-primary" disabled={!count || sealed} onClick={() => requestBet(false)}>立即投注</button></div>
+        <div className="sfg-lottery-dock"><section className="sfg-lottery-amount"><button className="sfg-lottery-clear" aria-label="清空选号" onClick={() => { resetPicks(); notify('选号已清空') }}><Trash2 size={17} /></button><label className="sfg-lottery-unit"><select aria-label="单注单位" value={unit} onChange={(event) => setUnit(Number(event.target.value))}>{[[1,'2元'],[.1,'2角'],[.01,'2分'],[.001,'2厘'],[.5,'1元'],[.05,'1角'],[.005,'1分'],[.0005,'1厘']].map(([value,label]) => <option key={label} value={value}>{label}</option>)}</select></label><div className="sfg-multiplier"><span>倍数</span><button aria-label="减少倍数" onClick={() => setMultiplier(Math.max(1, multiplier - 1))}><Minus size={15} /></button><input aria-label="投注倍数" value={multiplier} inputMode="numeric" onChange={(event) => setMultiplier(Math.max(1, Number(event.target.value) || 1))} /><button aria-label="增加倍数" onClick={() => setMultiplier(multiplier + 1)}><Plus size={15} /></button></div><input className="sfg-production-total" aria-label="投注总金额" placeholder="输入总金额" inputMode="decimal" value={totalInput} onChange={(event) => { const value = event.target.value; setTotalInput(value); if (count && Number(value) > 0) setMultiplier(Math.max(1, Math.floor(Number(value) / (count * 2 * unit)))) }} /></section><div className="sfg-lottery-betbar"><div><span>已选 <b>{count}</b> 注</span><strong>共 {amount.toFixed(2)} USDT</strong></div><button className="sfg-basket-button" onClick={() => setSheet('basket')}><ShoppingCart size={22} /><small>采购篮</small>{basket.length > 0 && <i>{basket.length}</i>}</button><button className="sfg-button sfg-button-soft" disabled={!count || sealed} onClick={addBasket}><Plus size={24} />添加选号</button><button className="sfg-button sfg-button-primary" disabled={!count || sealed} onClick={() => requestBet(false)}>立即投注</button></div></div>
       </>}
-      {tab === '开奖' && <LotteryDrawTab notify={notify} onVerify={(item) => { setVerifyResult(item); setSheet('lotteryVerify') }} />}
-      {tab === '注单' && <LotteryOrdersTab orders={orders} navigate={navigate} notify={notify} />}
-      {tab === '走势' && <LotteryTrendTab setSheet={setSheet} trendPlay={trendPlay} />}
+      {tab === '开奖' && <ProductionDraws results={gameResults} onVerify={(item) => { setVerifyResult(item); setSheet('lotteryVerify') }} />}
+      {tab === '注单' && <ProductionOrders orders={orders} lottery={lottery} onBack={() => setTab('投注')} onChase={() => callNavigate(navigate, '/pages/lottery/chase')} onDetail={(order) => { setPendingBet(order); setSheet('orderDetail') }} />}
+      {tab === '走势' && <ProductionTrend results={gameResults} />}
 
-      <Sheet title={sheet === 'lotteries' ? '切换彩种' : ''} onClose={() => setSheet('')}><div className="sfg-option-list">{LOTTERY_GAMES.map((item) => <button key={`${item.name}-${item.path}`} onClick={() => { setSourceGame(item); setSheet(''); callNavigate(navigate, item.path) }}><span className="sfg-game-orb"><Sparkles size={17} /></span><span><b>{item.name}</b><small>{item.source}</small></span>{sourceGame.name === item.name && <Check size={17} />}</button>)}</div></Sheet>
+      <ProductionDialog title={sheet === 'sound' ? '声音设置' : ''} onClose={() => setSheet('')}><div className="sfg-production-sound"><label>音乐音量<span>静音<input aria-label="静音" type="checkbox" checked={sound} onChange={(event) => setSound(event.target.checked)} /></span></label><input aria-label="音乐音量" type="range" min="0" max="100" value={volume} onChange={(event) => setVolume(Number(event.target.value))} /></div></ProductionDialog>
+      <ProductionDialog title={sheet === 'orderDetail' ? '注单详情' : ''} onClose={() => setSheet('')}><div className="sfg-detail-list">{[['彩种',lottery.name],['注单编号',pendingBet?.id],['期号',pendingBet?.issue],['玩法',pendingBet?.play],['投注内容',pendingBet?.pick],['投注金额',pendingBet?.amount],['状态',pendingBet?.status]].map(([label,value])=><div key={label}><span>{label}</span><b>{value}</b></div>)}</div></ProductionDialog>
+
+      {sheet === 'lotteries' && <div className="sfg-production-game-menu" role="dialog" aria-label="选择彩票"><BlockLotteryCatalog onChoose={(item) => { setSourceGame(item); resetPicks(); setSheet(''); callNavigate(navigate, item.path) }} /><button className="sfg-production-game-close" onClick={() => setSheet('')}>收起</button></div>}
       <LotteryPlaySheet open={sheet === 'plays'} selectedFamily={family} setSelectedFamily={setFamily} play={play} onChoose={(value) => { setPlay(value); resetPicks(); setSheet(''); notify(`已切换玩法：${value}`) }} onClose={() => setSheet('')} />
       <Sheet title={sheet === 'guide' ? '玩法介绍' : ''} full onClose={() => setSheet('')}><div className="sfg-sheet-tabs"><button className={guideTab === '玩法' ? 'sfg-active' : ''} onClick={() => setGuideTab('玩法')}>玩法</button><button className={guideTab === '中奖' ? 'sfg-active' : ''} onClick={() => setGuideTab('中奖')}>中奖</button></div>{guideTab === '玩法' ? <div className="sfg-article"><h3>{play}</h3><p>从万、千、百、十、个五个位置分别选择一个或多个号码，所选号码组成一注或多注号码。</p><h4>投注示例</h4><p>选择 1、2、3、4、5，若当期开奖号码与所选号码及位置完全相同，即为中奖。</p></div> : <div className="sfg-article"><h3>中奖说明</h3><p>本玩法按号码和位置共同判断。演示赔率及奖金仅用于界面展示，以注单页面显示为准。</p><h4>单注金额</h4><p>标准模式每注 2 USDT，可通过倍数和元角分单位调整演示金额。</p></div>}</Sheet>
-      <Sheet title={sheet === 'source' ? '号码来源' : ''} full onClose={() => setSheet('')}><div className="sfg-article"><h3>{sourceGame.source}</h3><p>开奖号码由演示区块哈希按固定位数映射生成，页面不访问真实区块链服务。</p><h4>开奖示例</h4><p>区块哈希末尾依次提取 5 个有效数字，得到示例号码 6、1、9、3、8。</p><h4>开奖时间</h4><p>每 1 分钟一期，封盘后展示开奖倒计时。</p><h4>玩法规则</h4><p>开奖结果经演示验证后用于各类直选、组选、定位胆等玩法判定。</p></div></Sheet>
+      <ProductionDialog title={sheet === 'source' ? sourceGame.name : ''} onClose={() => setSheet('')}><article className="sfg-production-article"><h3>号码来源</h3><p>{sourceGame.name}采用{sourceGame.source}哈希值(Block hash)从左到右最后5个数字作为开奖号码（字母忽略）。</p><h3>开奖示例</h3><p>获胜的区块哈希值：<br />0x5ddf58fef0790662adcd37db34d0286be7828c7190d5226b1b2<span>f2d4a3d4b5</span><br />那么开奖结果为：【2、4、3、4、5】。</p><h3>开奖时间</h3><p>每{sourceGame.cycle >= 60 ? `${sourceGame.cycle / 60}分钟` : `${sourceGame.cycle}秒`}开奖一次，全天共进行 {86400 / sourceGame.cycle} 期。开奖时间和销售截止时间统一采用 UTC 时间。</p><h3>区块时间</h3><p>号码来源及区块信息仅供本地原型展示，不连接真实链上服务。</p></article></ProductionDialog>
       <Sheet title={sheet === 'displaySettings' ? '冷热遗漏设置' : ''} onClose={() => setSheet('')} footer={<div className="sfg-button-pair"><button className="sfg-button sfg-button-soft" onClick={() => setSheet('')}>取消</button><button className="sfg-button sfg-button-primary" onClick={() => { setShowHot(displayDraft.hot); setShowOmit(displayDraft.omit); setSheet(''); notify('显示设置已保存') }}>保存</button></div>}><div className="sfg-setting-list"><label><span><b>显示冷热值</b><small>球号下方展示近期出现次数</small></span><input type="checkbox" checked={displayDraft.hot} onChange={(event) => setDisplayDraft((value) => ({ ...value, hot: event.target.checked }))} /></label><label><span><b>显示遗漏值</b><small>球号右上角展示当前遗漏期数</small></span><input type="checkbox" checked={displayDraft.omit} onChange={(event) => setDisplayDraft((value) => ({ ...value, omit: event.target.checked }))} /></label></div></Sheet>
       <Sheet title={sheet === 'quickAmounts' ? '编辑快捷金额' : ''} onClose={() => setSheet('')} footer={<div className="sfg-button-pair"><button className="sfg-button sfg-button-soft" onClick={() => setQuickAmounts(['10', '20', '50', '100', '500'])}>恢复默认</button><button className="sfg-button sfg-button-primary" onClick={() => { setSheet(''); notify('快捷金额已保存') }}>保存</button></div>}><p className="sfg-sheet-tip">最多设置 8 个快捷金额</p><div className="sfg-quick-amount-editor">{quickAmounts.map((value, index) => <label key={index}><input value={value} inputMode="decimal" onChange={(event) => setQuickAmounts((items) => items.map((item, itemIndex) => itemIndex === index ? event.target.value : item))} /><button onClick={() => setQuickAmounts((items) => items.filter((_, itemIndex) => itemIndex !== index))}><X size={15} /></button></label>)}{quickAmounts.length < 8 && <button onClick={() => setQuickAmounts((items) => [...items, ''])}><Plus size={16} />添加金额</button>}</div></Sheet>
-      <Sheet title={sheet === 'basket' ? '采购篮' : ''} full onClose={() => setSheet('')} footer={<div className="sfg-basket-footer"><span>本次受理合计 <b>{basketAmount.toFixed(2)} USDT</b>{rawBasketAmount > LOTTERY_BET_LIMIT && <small>原始合计 {rawBasketAmount.toFixed(2)}，已按本期上限调整</small>}</span><button className="sfg-button sfg-button-primary" disabled={!basket.length} onClick={() => requestBet(true)}>立即投注</button></div>}><div className="sfg-basket-head"><span>共 {basket.length} 个选号方案</span><button className="sfg-link" disabled={!basket.length} onClick={() => { setBasket([]); notify('采购篮已清空') }}><Trash2 size={14} />清空</button></div>{basket.length ? basket.map((item) => <div className="sfg-basket-item" key={item.id}><div><b>{item.play}</b><p>{item.picks}</p><small>{item.count}注 · {item.amount.toFixed(2)} USDT</small></div><button onClick={() => setBasket((items) => items.filter((entry) => entry.id !== item.id))}><Trash2 size={17} /></button></div>) : <Empty text="采购篮暂无选号" />}</Sheet>
+<Sheet title={sheet === 'basket' ? '采购篮' : ''} full onClose={() => setSheet('')} footer={<div className="sfg-basket-footer"><span>本次受理合计 <b>{basketAmount.toFixed(2)} USDT</b>{rawBasketAmount > LOTTERY_BET_LIMIT && <small>原始合计 {rawBasketAmount.toFixed(2)}，已按本期上限调整</small>}</span><button className="sfg-button sfg-button-soft" disabled={!basket.length} onClick={() => setBasketChase('open')}>追号投注</button><button className="sfg-button sfg-button-primary" disabled={!basket.length} onClick={() => requestBet(true)}>立即投注</button></div>}><div className="sfg-basket-head"><span>共 {basket.length} 个选号方案</span><button className="sfg-link" disabled={!basket.length} onClick={() => { setBasket([]); notify('采购篮已清空') }}><Trash2 size={14} />清空</button></div>{basket.length ? basket.map((item) => <div className="sfg-basket-item" key={item.id}><div><b>{item.play}</b><p>{item.picks}</p><small>{item.count}注 · {item.amount.toFixed(2)} USDT</small></div><button onClick={() => setBasket((items) => items.filter((entry) => entry.id !== item.id))}><Trash2 size={17} /></button></div>) : <Empty text="采购篮暂无选号" />}</Sheet>
       <Sheet title={sheet === 'betConfirm' ? '确认投注' : ''} onClose={() => { setSheet(''); setPendingBet(null) }} footer={<div className="sfg-button-pair"><button className="sfg-button sfg-button-soft" onClick={() => { setSheet(''); setPendingBet(null) }}>取消</button><button className="sfg-button sfg-button-primary" onClick={placeBet}>确认投注</button></div>}><div className="sfg-confirm-card"><div><span>彩种</span><b>{lottery.name}</b></div><div><span>期号</span><b>{lottery.issue}</b></div><div><span>玩法</span><b>{play}</b></div><div><span>注数</span><b>{pendingBet?.totalCount || 0} 注</b></div><div><span>投注金额</span><b>{Number(pendingBet?.totalAmount || 0).toFixed(2)} USDT</b></div><p><CircleHelp size={14} />仅生成本地演示注单，不会发起真实投注。</p></div></Sheet>
       <Sheet title={sheet === 'lotteryVerify' ? '开奖验证' : ''} full onClose={() => setSheet('')}><div className="sfg-verify-status"><ShieldCheck size={34} /><b>开奖数据验证一致</b><span>本页为演示验证结果</span></div>{verifyResult && <div className="sfg-detail-list"><div><span>期号</span><b>{verifyResult.issue}</b></div><div><span>开奖号码</span><b>{verifyResult.numbers.join(' ')}</b></div><div><span>开奖区块</span><b>70419860</b></div><div className="sfg-detail-wide"><span>区块哈希</span><b>e923744fa65ad2f82ea25ce09de109f6d59269874a06f83d85cb5905be48a314</b><button className="sfg-link" onClick={() => notify('区块哈希已复制')}><Copy size={14} />复制</button></div></div>}<button className="sfg-button sfg-button-outline" onClick={() => notify('演示原型不发起真实链上查询')}>链上核对</button></Sheet>
       <Sheet title={sheet === 'trendPlay' ? '走势玩法' : ''} onClose={() => setSheet('')}><div className="sfg-simple-options">{['五星号码分布', '前二组选走势', '后二和值走势', '总和大小单双'].map((item) => <button key={item} onClick={() => { setTrendPlay(item); setSheet(''); notify(`已切换为${item}`) }}>{item}<ChevronRight size={16} /></button>)}</div></Sheet>
       <Sheet title={sheet === 'requirement' ? '业务及需求说明' : ''} full onClose={() => setSheet('')}><StorefrontRequirementDetails requirement={pageRequirement} /></Sheet>
     </main>
+    {basketChase && <div className="sfg-basket-chase" hidden={basketChase !== 'open'} role="dialog" aria-modal="true" aria-label="追号策略"><ExistingLotteryChasePage navigate={() => setBasketChase('closed')} toast={toast} /></div>}
+    </>
   )
 }
 

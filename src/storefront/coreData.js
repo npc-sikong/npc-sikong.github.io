@@ -13,6 +13,7 @@ export const gameTabs = [
 ]
 
 export const gameCards = [
+  { id: 'block-lottery', title: '哈希一分彩', image: '/storefront/block-lottery.svg', category: ['lottery'], streak: '区块彩票', result: '五位', periods: 1, path: '/pages/lottery/tron-minute' },
   { id: 'minute-odd-even', title: '1分彩单双', image: assetPath('game-01.jpg'), category: ['hot', 'lottery'], streak: '单区块连', result: '单', periods: 5, path: '/pages/hash/one-minute-parity' },
   { id: 'tail-odd-even', title: '尾数单双', image: assetPath('game-02.png'), category: ['hot', 'lottery'], streak: '单区块连', result: '单', periods: 13, path: '/pages/hash/tail-parity' },
   { id: 'hash-6', title: '6秒哈希', image: assetPath('game-03.png'), category: ['hot', 'hash'], streak: '双区块连', result: '双', periods: 6, path: '/pages/hash/six-second' },

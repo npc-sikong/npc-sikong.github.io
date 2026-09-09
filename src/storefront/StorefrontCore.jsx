@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import StorefrontRequirementEntry from './StorefrontRequirementEntry'
+import BlockLotteryCatalog from './BlockLotteryCatalog'
 import {
   ArrowUpRight,
   BarChart3,
@@ -421,6 +423,7 @@ export function HomePage({ onNavigate, onToast, balance = '0.00', userName = 'de
       />
 
       <main className="sf-home-content">
+        <StorefrontRequirementEntry path="/front/pages/index/index" />
         <section className="sf-home-carousel" aria-label="活动轮播">
           <button type="button" className="sf-home-carousel__image" onClick={() => go('/pages/benefit/index', homeBanners[activeBanner].label)}>
             <img src={homeBanners[activeBanner].image} alt={homeBanners[activeBanner].label} />
@@ -458,7 +461,7 @@ export function HomePage({ onNavigate, onToast, balance = '0.00', userName = 'de
           ))}
         </div>
 
-        <section className="sf-game-grid" aria-label="游戏列表">
+        {activeGameTab === 'lottery' ? <BlockLotteryCatalog onChoose={(game) => go(game.path, game.name)} /> : <section className="sf-game-grid" aria-label="游戏列表">
           {games.map((game, index) => (
             <button type="button" className="sf-game-card" key={game.id} onClick={() => game.path ? go(game.path, game.title) : notify(`${game.title}游戏入口已打开（演示）`)}>
               <img src={game.image} alt={game.title} />
@@ -466,7 +469,7 @@ export function HomePage({ onNavigate, onToast, balance = '0.00', userName = 'de
               <span className="sf-game-card__streak">{game.streak} <b>{game.result}</b> <em>{game.periods}期</em></span>
             </button>
           ))}
-        </section>
+        </section>}
 
         <section className="sf-rank-card">
           <SectionTitle icon="🏆">排行榜</SectionTitle>

@@ -19,11 +19,11 @@ import {
   GameGuidePage,
   GameListPage,
   HashGamePage,
-  LotteryChasePage,
   LotteryGamePage,
   LotteryLongDragonPage,
   OrderDetailPage,
 } from './GamePages.jsx'
+import LotteryChasePage from './LotteryChasePage.jsx'
 import { HASH_RECORDS } from './accountData.js'
 import { HASH_GAME_ITEMS, LOTTERY_ORDERS } from './gameData.js'
 import {
